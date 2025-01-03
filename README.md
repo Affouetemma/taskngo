@@ -1,14 +1,24 @@
 # TaskNGo
 
-TaskNGO is a lightweight and simple to-do list widget built with React. It helps you organize your tasks into categories like Today's Tasks, Upcoming Tasks, Past Tasks, and Archived Tasks. The widget is designed for productivity enthusiasts who want a sleek and intuitive way to track their to-do items.
+TaskNGo is a lightweight and intuitive task management widget built with React. It helps you organize your tasks with real-time alerts and smart scheduling features, categorizing them into Today's Tasks, Upcoming Tasks, Completed Tasks, and Archived Tasks.
 
 ## Features
 
-- **Categorized Tasks**: Automatically sorts tasks into Today, Upcoming, Past, and Archived.
-- **Customizable Time and Date**: Add due dates and times to each task.
-- **Modern Design**: Clean and responsive UI.
-- **Interactive Controls**: Mark tasks as done, delete them, or restore archived items.
-
+- **Smart Categorization**: Automatically sorts tasks into Today, Upcoming, Completed, and Archived
+- **Real-time Alerts**:
+   - Visual and audio notifications one minute before task due time,
+   - Clock icon appears as visual reminder,
+   - Task shaking animation for urgent tasks
+- **Task Scheduling**:
+   - Customizable date and time for each task,
+   - Automatic scheduling alerts,
+   - Weekly task reset (every Sunday midnight).
+- **Interactive Controls**:
+   - Customizable date and time for each task,
+   - Automatic scheduling alerts,
+   - Weekly task reset (every Sunday midnight).
+ - **Modern Design**: Modern Design: Clean, responsive UI optimized for productivity.
+   
 ## Installation
 
 Follow these steps to set up and run TaskNGO locally:
@@ -35,11 +45,21 @@ Follow these steps to set up and run TaskNGO locally:
 
 5. Open [http://localhost:3000](http://localhost:3000) to view the app in your browser.
 
+## Required Dependencies
+
+   - React
+   - React icons
+   - date-fns
+
 ## Usage
 
-1. Add a task by entering its name, selecting a due date and time, and clicking the "Add" button.
-2. View tasks under their respective categories (e.g., Today's Tasks, Upcoming Tasks).
-3. Mark tasks as completed, delete them, or archive them as needed.
+1. Add a task by entering its name and selecting a due date/time.
+2. Monitor tasks in their respective categories
+3. Receive alerts one minute before task time.
+4. Respond to completion prompts.
+5. Archive or delete tasks as needed.
+6. View upcoming tasks with scheduling indicators.
+7. Track completed tasks in dedicated section
 
 ## Contributing
 
@@ -64,8 +84,12 @@ Contributions are welcome! If you have suggestions for features or improvements:
 
 TaskNGO is open-source software licensed under the [MIT License](./LICENSE).
 
+## Author
+Affouet Emmanuella Ouattara
+
 ## Acknowledgments
 
-- Inspired by productivity apps and tools for personal task management.
+- Inspired by productivity apps and tools for personal task management
+- Built with modern React practices and real-time task management features
 
 ---
