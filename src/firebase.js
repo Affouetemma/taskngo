@@ -5,7 +5,7 @@ import { getFirestore, doc, updateDoc, getDoc } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyANy12I7aRcZN5IvQJkSIOXr_cv4c3c0t0",
+  apiKey: "AIzaSyBHIo-SM6M4N6k3cdAUb3p9ICEnZfKSY3g",
   authDomain: "taskngo-e2ddd.firebaseapp.com",
   projectId: "taskngo-e2ddd",
   storageBucket: "taskngo-e2ddd.firebasestorage.app",
