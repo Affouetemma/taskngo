@@ -1,4 +1,4 @@
-# TaskNGO
+# TaskNGo
 
 TaskNGO is a lightweight and simple to-do list widget built with React. It helps you organize your tasks into categories like Today's Tasks, Upcoming Tasks, Past Tasks, and Archived Tasks. The widget is designed for productivity enthusiasts who want a sleek and intuitive way to track their to-do items.
 
