@@ -3,15 +3,15 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore, doc, updateDoc, getDoc } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyBHIo-SM6M4N6k3cdAUb3p9ICEnZfKSY3g",
-  authDomain: "taskngo-e2ddd.firebaseapp.com",
-  projectId: "taskngo-e2ddd",
-  storageBucket: "taskngo-e2ddd.firebasestorage.app",
-  messagingSenderId: "856409446769",
-  appId: "1:856409446769:web:30b05291693301e5d3bed0",
-  measurementId: "G-J9GJS59BZN"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
@@ -40,7 +40,7 @@ export async function addUserRating(userId, userRating) {
 
       // Update the userRatings map in Firestore
       await updateDoc(taskngoRef, {
-        userRatings
+        userRatings,
       });
 
       console.log("User rating added/updated successfully.");
