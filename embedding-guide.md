@@ -56,7 +56,7 @@ https://taskngo.vercel.app
 
 ### Step 2: Embed in Notion
 Open your Notion page and type /embed.
-Paste the URL of your deployed Taskngo widget.
+Paste the URL of your Taskngo widget.
 
 Notion will automatically generate an embedded view of the widget.
 Note: You may need to adjust the size in Notion for optimal display. Resize the embedded iframe as per your design needs.
