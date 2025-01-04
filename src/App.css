@@ -12,6 +12,7 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 /* Header Styling */
@@ -27,7 +28,7 @@ body {
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 800px;
+  max-width: 100%;
   justify-content: space-between;
 }
 
@@ -56,7 +57,7 @@ body {
 
 /* Widget Styling */
 .widget {
-  width: 95%;
+  width: 100%; /* Adjusted width for full scaling */
   max-width: 800px;
   background-color: #fff;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -112,14 +113,14 @@ body {
   flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
-  width: 100%; /* Ensure the container does not overflow the parent */
+  width: 100%;
   box-sizing: border-box;
 }
 
 .input-container input,
 .input-container button {
-  width: 100%; /* Make sure inputs/buttons fill the container */
-  box-sizing: border-box; /* Include padding and border in width calculation */
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -153,7 +154,6 @@ body {
   margin-bottom: 10px;
 }
 
-/* Task Categories */
 .category:nth-child(1) {
   background-color: #fff9c4;
 }
@@ -185,7 +185,7 @@ body {
   border: 1px solid #e0e0e0;
   border-radius: 5px;
   margin-bottom: 10px;
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  flex-wrap: wrap;
 }
 
 .task-item span {
@@ -195,7 +195,7 @@ body {
 .task-item .icons {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap; /* Allow wrapping for icons */
+  flex-wrap: wrap;
 }
 
 .task-item .icon {
