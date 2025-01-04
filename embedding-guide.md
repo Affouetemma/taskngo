@@ -46,27 +46,27 @@ Once you have the URL, you can add it to your website using an iframe. Place the
 
 Adjust the width and height as needed. For a full-width widget, you can set width="100%". Modify the height according to your design preferences.
 
-##3. Embedding Taskngo on Notion
+## 3. Embedding Taskngo on Notion
 
 To embed Taskngo into Notion, follow these steps:
 
-Step 1: Get the Vercel Link
+### Step 1: Get the Vercel Link
 https://taskngo.vercel.app
 
-Step 2: Embed in Notion
+### Step 2: Embed in Notion
 Open your Notion page and type /embed.
 Paste the URL of your deployed Taskngo widget.
 
 Notion will automatically generate an embedded view of the widget.
 Note: You may need to adjust the size in Notion for optimal display. Resize the embedded iframe as per your design needs.
 
-##4. Embedding Taskngo on Other Platforms
+## 4. Embedding Taskngo on Other Platforms
 If you want to embed Taskngo on other platforms such as WordPress, Ghost, or any other website builder that supports iframes, you can follow the same iframe method.
 
-Step 1: Get the Vercel Link
+### Step 1: Get the Vercel Link
 https://taskngo.vercel.app
 
-Step 2: Embed the Widget
+### Step 2: Embed the Widget
 Use the following HTML iframe code for embedding:
 <iframe
     src="https://taskngo.vercel.app"
@@ -78,7 +78,7 @@ Use the following HTML iframe code for embedding:
 
 Adjust the width and height to fit your platform’s requirements. This method should work for any platform that supports iframes.
 
-5. Customizing Your Widget
+## 5. Customizing Your Widget
 You can further customize the appearance and behavior of the Taskngo widget. Below are some tips:
 
 CSS Customization: Modify the CSS file to change colors, fonts, button styles, and more.
@@ -102,7 +102,7 @@ You can also adjust styles based on screen sizes using media queries:
     }
 }
 
-6. Frequently Asked Questions (FAQ)
+## 6. Frequently Asked Questions (FAQ)
 
 Q1: How do I change the size of the widget?
 You can change the widget size by modifying the width and height attributes in the iframe tag. For instance:
@@ -121,7 +121,7 @@ Yes, you can embed the Taskngo widget on any number of websites. Simply use the 
 Q3: What if the widget doesn’t fit properly?
 If the widget doesn’t fit on your page, you can adjust the width and height of the iframe tag to better suit your layout. You can also customize the widget's CSS for further styling adjustments.
 
-7. Support and Feedback
+## 7. Support and Feedback
 If you need further assistance or have any questions, feel free to reach out! You can:
 
 Open an issue in our GitHub repository.
