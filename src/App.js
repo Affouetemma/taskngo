@@ -6,7 +6,20 @@ import './App.css';
 // Import Firebase functions
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase';
 
+// Import Vercel Analytics
+import { inject } from '@vercel/analytics';
+inject();
+
+// Import Google Tag Manager module
+import TagManager from 'react-gtm-module';
+
 const ALERT_SOUND = '/message-alert.mp3';
+
+// Initialize GTM
+const tagManagerArgs = {
+  gtmId: 'GTM-NPK8MNRQ', // Replace with your GTM container ID
+};
+TagManager.initialize(tagManagerArgs);
 
 function App() {
   const [tasks, setTasks] = useState([]);
