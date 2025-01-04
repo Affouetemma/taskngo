@@ -69,22 +69,27 @@ function App() {
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
       if (response === 'yes') {
+        // Mark the task as completed
         setTasks(tasks.map((task) =>
           task.id === completionPopup.taskId ? { ...task, completed: true } : task
         ));
       } else if (response === 'no') {
+        // Do not mark the task as completed, just close the popup and stop the sound
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
             task.id === completionPopup.taskId
-              ? { ...task, alertPlayed: true }
+              ? { ...task, alertPlayed: true } // You can optionally set alertPlayed here to avoid further alerts
               : task
           )
         );
-        stopSound();
+        stopSound(); // Stop the alert sound if "No" is clicked
       }
     }
+    
+    // Close the popup after either "Yes" or "No"
     setCompletionPopup({ show: false, taskId: null });
   };
+  
 
   const handleWidgetRating = async (ratingValue) => {
     setWidgetRating(ratingValue); // Update the rating value in the state
@@ -114,32 +119,33 @@ function App() {
       setTasks((prevTasks) => {
         const updatedTasks = prevTasks.map((task) => {
           const timeRemaining = task.date - now;
-  
+    
           if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
-            alertAudio.current.play(); // Use .current to access the audio instance
+            alertAudio.current.play(); // Play the alert sound when the task is near its due time
             return { ...task, alertPlayed: true, isShaking: true };
           }
-  
-          if (isToday(task.date) && 
-              ((Math.abs(timeRemaining) < 1000) ||
-               (timeRemaining > 0 && timeRemaining <= 3600000)) &&
+    
+          if (isToday(task.date) &&
+              ((Math.abs(timeRemaining) < 1000) || 
+              (timeRemaining > 0 && timeRemaining <= 3600000)) && 
               !task.archived && 
               !task.completed && 
               !task.alertPlayed) {
+            // If the task time is near, show completion popup
             if (!completionPopup.show) {
               setCompletionPopup({ show: true, taskId: task.id });
             }
             return { ...task, isShaking: false, alertPlayed: true };
           }
-  
+    
           if (timeRemaining <= 0) {
-            return { ...task, isShaking: false };
+            return { ...task, isShaking: false }; // Remove the shake once the task time has passed
           }
-  
+    
           if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
             return { ...task, archived: true };
           }
-  
+    
           return task;
         });
         return updatedTasks;
@@ -147,7 +153,7 @@ function App() {
     }, 1000);
   
     return () => clearInterval(interval);
-  }, [completionPopup]);
+  }, [completionPopup]);  
   
 
   useEffect(() => {
