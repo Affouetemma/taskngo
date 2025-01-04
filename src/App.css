@@ -64,6 +64,7 @@ body {
   padding: 20px;
   margin-top: 20px;
   box-sizing: border-box;
+  overflow: hidden; /* Prevent overflow */
 }
 
 /* Widget Rating Section */
@@ -111,9 +112,14 @@ body {
   flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
+  width: 100%; /* Ensure the container does not overflow the parent */
+  box-sizing: border-box;
 }
 
-.input-container input {
+.input-container input,
+.input-container button {
+  width: 100%; /* Make sure inputs/buttons fill the container */
+  box-sizing: border-box; /* Include padding and border in width calculation */
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -121,12 +127,8 @@ body {
 }
 
 .input-container button {
-  padding: 10px 15px;
   background-color: #28a745;
   color: #fff;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
   cursor: pointer;
 }
 
