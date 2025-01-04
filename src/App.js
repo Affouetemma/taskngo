@@ -18,7 +18,6 @@ function App() {
   const [widgetRating, setWidgetRating] = useState(0); // Widget-wide rating state
   const alertAudio = useRef(new Audio(ALERT_SOUND));
 
-
   const handleScheduleClick = (taskId) => {
     setScheduleAlert({ show: true, taskId });
   };
@@ -52,6 +51,7 @@ function App() {
     ));
   };
 
+  // Show the popup only when the "validate" icon is clicked
   const completeTask = (id) => {
     setCompletionPopup({ show: true, taskId: id });
   };
@@ -66,6 +66,7 @@ function App() {
     alertAudio.currentTime = 0;
   };
 
+  // Handle the response to mark the task as completed
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
       if (response === 'yes') {
@@ -89,12 +90,10 @@ function App() {
     // Close the popup after either "Yes" or "No"
     setCompletionPopup({ show: false, taskId: null });
   };
-  
-  
 
   const handleWidgetRating = async (ratingValue) => {
     setWidgetRating(ratingValue); // Update the rating value in the state
-  
+
     // Generate a unique ID for the user (e.g., using the current timestamp or UUID)
     const userId = Date.now().toString();  // Using timestamp as a unique ID
     
@@ -103,7 +102,7 @@ function App() {
     // Update the average rating in Firebase after adding the user's rating
     await updateAverageRating();
   };
-  
+
   useEffect(() => {
     const now = new Date();
     const nextSundayMidnight = startOfWeek(now, { weekStartsOn: 0 }).setHours(24, 0, 0, 0);
@@ -120,42 +119,28 @@ function App() {
       setTasks((prevTasks) => {
         const updatedTasks = prevTasks.map((task) => {
           const timeRemaining = task.date - now;
-  
+
           if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
             alertAudio.current.play(); // Play the alert sound
             return { ...task, alertPlayed: true, isShaking: true };
           }
-  
-          // If the task is close to its due time and has not been completed, show the completion popup
-          if (isToday(task.date) &&
-            ((Math.abs(timeRemaining) < 1000) || (timeRemaining > 0 && timeRemaining <= 3600000)) && 
-            !task.archived && 
-            !task.completed &&
-            !task.alertPlayed) {
-            if (!completionPopup.show) {
-              setCompletionPopup({ show: true, taskId: task.id });
-            }
-            return { ...task, isShaking: false, alertPlayed: true };
-          }
-  
+
           if (timeRemaining <= 0) {
             return { ...task, isShaking: false }; // Remove shake once the task time has passed
           }
-  
+
           if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
             return { ...task, archived: true };
           }
-  
+
           return task;
         });
         return updatedTasks;
       });
     }, 1000);
-  
+
     return () => clearInterval(interval);
-  }, [completionPopup]);
-  
-  
+  }, []);
 
   useEffect(() => {
     const fetchRating = async () => {
@@ -176,7 +161,7 @@ function App() {
           </div>
         </div>
       )}
-      
+
       {alertVisible && (
         <div className="alert">
           <p>Tasks have been reset for the week!</p>
@@ -326,7 +311,7 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
       </div>
     </div>
   );
-
 };
 
 export default App;
+
