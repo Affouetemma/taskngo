@@ -66,30 +66,28 @@ function App() {
     alertAudio.currentTime = 0;
   };
 
-  // Handle the response to mark the task as completed
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
-      if (response === 'yes') {
-        // Mark the task as completed
-        setTasks(tasks.map((task) =>
-          task.id === completionPopup.taskId ? { ...task, completed: true } : task
-        ));
-      } else if (response === 'no') {
-        // Do not mark the task as completed, just close the popup
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === completionPopup.taskId
-              ? { ...task, alertPlayed: true }  // Mark alert as played so we don't show it again
-              : task
-          )
-        );
-        stopSound(); // Stop the alert sound if "No" is clicked
-      }
+      setTasks(prevTasks => {
+        return prevTasks.map((task) => {
+          if (task.id === completionPopup.taskId) {
+            if (response === 'yes') {
+              // Mark the task as completed and move it to "Completed"
+              return { ...task, completed: true };
+            } else if (response === 'no') {
+              // Keep the task in "Today's Tasks" and mark alert as played
+              return { ...task, alertPlayed: true };  // Mark alert as played so we don't show it again
+            }
+          }
+          return task;
+        });
+      });
     }
-    
-    // Close the popup after either "Yes" or "No"
+  
+    // Close the popup after either "Yes" or "No" is clicked
     setCompletionPopup({ show: false, taskId: null });
   };
+  
 
   const handleWidgetRating = async (ratingValue) => {
     setWidgetRating(ratingValue); // Update the rating value in the state
@@ -119,28 +117,47 @@ function App() {
       setTasks((prevTasks) => {
         const updatedTasks = prevTasks.map((task) => {
           const timeRemaining = task.date - now;
-
+  
+          // If the task is scheduled for today and it's an upcoming task, move it to today's tasks
+          if (isFuture(task.date) && !task.archived && !task.completed) {
+            if (format(task.date, 'MM/dd/yyyy') === format(now, 'MM/dd/yyyy')) {
+              return { ...task, date: now }; // Update task date to now (move to today)
+            }
+          }
+  
           if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
             alertAudio.current.play(); // Play the alert sound
             return { ...task, alertPlayed: true, isShaking: true };
           }
-
+  
+          if (isToday(task.date) &&
+            ((Math.abs(timeRemaining) < 1000) || (timeRemaining > 0 && timeRemaining <= 3600000)) && 
+            !task.archived && 
+            !task.completed &&
+            !task.alertPlayed) {
+            if (!completionPopup.show) {
+              setCompletionPopup({ show: true, taskId: task.id });
+            }
+            return { ...task, isShaking: false, alertPlayed: true };
+          }
+  
           if (timeRemaining <= 0) {
             return { ...task, isShaking: false }; // Remove shake once the task time has passed
           }
-
+  
           if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
             return { ...task, archived: true };
           }
-
+  
           return task;
         });
         return updatedTasks;
       });
     }, 1000);
-
+  
     return () => clearInterval(interval);
-  }, []);
+  }, [completionPopup]);
+  
 
   useEffect(() => {
     const fetchRating = async () => {
