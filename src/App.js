@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
 import { format, isToday, isFuture, isPast, startOfWeek, differenceInMilliseconds, endOfDay } from 'date-fns';
 import './App.css';
@@ -16,7 +16,8 @@ function App() {
   const [completionPopup, setCompletionPopup] = useState({ show: false, taskId: null });
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0); // Widget-wide rating state
-  const alertAudio = new Audio(ALERT_SOUND);
+  const alertAudio = useRef(new Audio(ALERT_SOUND));
+
 
   const handleScheduleClick = (taskId) => {
     setScheduleAlert({ show: true, taskId });
@@ -113,12 +114,12 @@ function App() {
       setTasks((prevTasks) => {
         const updatedTasks = prevTasks.map((task) => {
           const timeRemaining = task.date - now;
-
+  
           if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
-            alertAudio.play();
+            alertAudio.current.play(); // Use .current to access the audio instance
             return { ...task, alertPlayed: true, isShaking: true };
           }
-
+  
           if (isToday(task.date) && 
               ((Math.abs(timeRemaining) < 1000) ||
                (timeRemaining > 0 && timeRemaining <= 3600000)) &&
@@ -130,23 +131,24 @@ function App() {
             }
             return { ...task, isShaking: false, alertPlayed: true };
           }
-
+  
           if (timeRemaining <= 0) {
             return { ...task, isShaking: false };
           }
-
+  
           if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
             return { ...task, archived: true };
           }
-
+  
           return task;
         });
         return updatedTasks;
       });
     }, 1000);
-
+  
     return () => clearInterval(interval);
   }, [completionPopup]);
+  
 
   useEffect(() => {
     const fetchRating = async () => {
