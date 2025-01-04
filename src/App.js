@@ -3,11 +3,9 @@ import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa'
 import { format, isToday, isFuture, isPast, startOfWeek, differenceInMilliseconds, endOfDay } from 'date-fns';
 import './App.css';
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase';
-import { inject } from '@vercel/analytics'; // Vercel Analytics
+import { Analytics } from "@vercel/analytics/react"; // Add this import
 import TagManager from 'react-gtm-module'; // Google Tag Manager module
 
-// Initialize Vercel Analytics 
-inject();
 
 // Initialize GTM
 const tagManagerArgs = {
