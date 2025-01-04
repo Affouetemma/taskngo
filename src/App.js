@@ -61,10 +61,6 @@ function App() {
     setAlertVisible(true);
   };
 
-  const stopSound = () => {
-    alertAudio.pause();
-    alertAudio.currentTime = 0;
-  };
 
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
