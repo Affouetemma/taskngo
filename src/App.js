@@ -113,51 +113,66 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const now = new Date();
-      setTasks((prevTasks) => {
-        const updatedTasks = prevTasks.map((task) => {
-          const timeRemaining = task.date - now;
-  
-          // If the task is scheduled for today and it's an upcoming task, move it to today's tasks
-          if (isFuture(task.date) && !task.archived && !task.completed) {
-            if (format(task.date, 'MM/dd/yyyy') === format(now, 'MM/dd/yyyy')) {
-              return { ...task, date: now }; // Update task date to now (move to today)
-            }
-          }
-  
-          if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
-            alertAudio.current.play(); // Play the alert sound
-            return { ...task, alertPlayed: true, isShaking: true };
-          }
-  
-          if (isToday(task.date) &&
-            ((Math.abs(timeRemaining) < 1000) || (timeRemaining > 0 && timeRemaining <= 3600000)) && 
-            !task.archived && 
-            !task.completed &&
-            !task.alertPlayed) {
-            if (!completionPopup.show) {
-              setCompletionPopup({ show: true, taskId: task.id });
-            }
-            return { ...task, isShaking: false, alertPlayed: true };
-          }
-  
-          if (timeRemaining <= 0) {
-            return { ...task, isShaking: false }; // Remove shake once the task time has passed
-          }
-  
-          if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
-            return { ...task, archived: true };
-          }
-  
-          return task;
+        const now = new Date();
+        setTasks((prevTasks) => {
+            const updatedTasks = prevTasks.map((task) => {
+                const timeRemaining = task.date - now;
+                console.log(`Task ID: ${task.id} | Time Remaining: ${timeRemaining}ms`);
+
+                // Move task to "Today" if its scheduled date matches today's date
+                if (isFuture(task.date) && !task.archived && !task.completed) {
+                    if (format(task.date, 'MM/dd/yyyy') === format(now, 'MM/dd/yyyy') && !isToday(task.date)) {
+                        return { ...task, date: now };  // Move the task to "Today" by setting the date to `now`
+                    }
+                }
+
+                // Show clock icon for today's tasks or upcoming tasks
+                const showClockIcon = (isToday(task.date) || isFuture(task.date)) && !task.archived && !task.completed;
+                if (showClockIcon) {
+                    task.showClockIcon = true;
+                }
+
+                // Play alert sound and shake the task one minute before the actual time
+                if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
+                    console.log(`Playing sound for task ID: ${task.id}`);
+                    alertAudio.current.play();  // Play the alert sound
+                    return { ...task, alertPlayed: true, isShaking: true };  // Set alertPlayed and isShaking to true
+                }
+
+                // Show completion popup if task is nearing its time and is not completed
+                if (isToday(task.date) &&
+                    (Math.abs(timeRemaining) < 1000 || (timeRemaining > 0 && timeRemaining <= 3600000)) && 
+                    !task.archived && 
+                    !task.completed &&
+                    !task.alertPlayed) {
+                    if (!completionPopup.show) {
+                        setCompletionPopup({ show: true, taskId: task.id });
+                    }
+                    return { ...task, isShaking: false, alertPlayed: true };
+                }
+
+                // Remove shaking after the task's time has passed and if completed or archived
+                if (timeRemaining <= 0) {
+                    if (task.completed) {
+                        return { ...task, isShaking: false };  // Task completed, no need for shaking
+                    }
+                    return { ...task, isShaking: false }; // Task not completed, no need for shaking
+                }
+
+                // Archive tasks that are past the end of their due date
+                if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
+                    return { ...task, archived: true };
+                }
+
+                return task;
+            });
+            return updatedTasks;
         });
-        return updatedTasks;
-      });
     }, 1000);
-  
+
     return () => clearInterval(interval);
-  }, [completionPopup]);
-  
+}, [completionPopup]);
+
 
   useEffect(() => {
     const fetchRating = async () => {
@@ -310,23 +325,24 @@ function App() {
 
 const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick }) => {
   return (
-    <div className={`task-item ${task.isShaking ? 'shake' : ''}`}>
-      <span>{task.text}</span>
-      <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
-      <div className="icons">
-        {isToday(task.date) && !isPast(task.date) && <FaClock className="icon clock-icon" />}
-        {isFuture(task.date) && !task.archived && !task.completed && (
-          <FaBell className="icon alert-icon" onClick={() => onScheduleClick(task.id)} />
-        )}
-        {!task.archived && (
-          <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
-        )}
-        {!task.completed && (
-          <FaCheck onClick={() => completeTask(task.id)} className="icon" />
-        )}
-        <FaTrashAlt onClick={() => deleteTask(task.id)} className="icon" />
+      <div className={`task-item ${task.isShaking ? 'shake' : ''}`}>
+          <span>{task.text}</span>
+          <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
+          <div className="icons">
+              {/* Clock icon for Today or Upcoming tasks */}
+              {task.showClockIcon && !task.archived && !task.completed && <FaClock className="icon clock-icon" />}
+              {isFuture(task.date) && !task.archived && !task.completed && (
+                  <FaBell className="icon alert-icon" onClick={() => onScheduleClick(task.id)} />
+              )}
+              {!task.archived && (
+                  <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
+              )}
+              {!task.completed && (
+                  <FaCheck onClick={() => completeTask(task.id)} className="icon" />
+              )}
+              <FaTrashAlt onClick={() => deleteTask(task.id)} className="icon" />
+          </div>
       </div>
-    </div>
   );
 };
 
