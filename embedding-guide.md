@@ -30,6 +30,7 @@ You can easily embed the Taskngo widget on any website by using an HTML iframe t
 
 ### Step 1: Get the TaskNGo Link
 - https://taskngo.vercel.app
+  
 
 ### Step 2: Embed the Widget
 
@@ -108,7 +109,7 @@ Q1: How do I change the size of the widget?
 You can change the widget size by modifying the width and height attributes in the iframe tag. For instance:
 
 <iframe
-    src="https://your-project-name.vercel.app"
+    src="https://taskngo.vercel.app"
     width="800px"
     height="600px"
     frameborder="0"
