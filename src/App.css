@@ -36,27 +36,27 @@ body {
 }
 
 .logo img {
-  height: 150px;
+  height: 120px;
 }
 
 .title {
   flex-grow: 1;
   text-align: center;
-  font-size: 35px;
+  font-size: 28px;
   font-weight: bold;
-  margin-right: 100px;
+  margin-right: 40px;
 }
 
 .alert-icon {
-  font-size: 24px;
+  font-size: 22px;
   cursor: pointer;
   color: orange;
-  margin-right: 90px;
+  margin-right: 20px;
 }
 
 /* Widget Styling */
 .widget {
-  width: 90%;
+  width: 95%;
   max-width: 800px;
   background-color: #fff;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -74,7 +74,7 @@ body {
 }
 
 .widget-rating h3 {
-  font-size: 20px;
+  font-size: 18px;
   margin-bottom: 10px;
 }
 
@@ -85,7 +85,7 @@ body {
 }
 
 .widget-rating .star {
-  font-size: 30px;
+  font-size: 28px;
   cursor: pointer;
   color: #ccc;
   transition: color 0.3s;
@@ -101,7 +101,7 @@ body {
 }
 
 .widget-rating p {
-  font-size: 16px;
+  font-size: 14px;
   margin-top: 10px;
 }
 
@@ -183,6 +183,7 @@ body {
   border: 1px solid #e0e0e0;
   border-radius: 5px;
   margin-bottom: 10px;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
 .task-item span {
@@ -192,6 +193,7 @@ body {
 .task-item .icons {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap; /* Allow wrapping for icons */
 }
 
 .task-item .icon {
@@ -295,4 +297,57 @@ body {
 
 .completion-popup button:hover {
   background: #0056b3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .logo img {
+    height: 80px;
+  }
+
+  .title {
+    font-size: 24px;
+    margin-right: 0;
+  }
+
+  .alert-icon {
+    font-size: 20px;
+    margin-right: 0;
+  }
+
+  .widget {
+    width: 100%;
+    padding: 15px;
+  }
+
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .task-item span {
+    margin-bottom: 5px;
+  }
+
+  .input-container input,
+  .input-container button {
+    width: 100%;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 20px;
+  }
+
+  .widget-rating .star {
+    font-size: 24px;
+  }
 }
