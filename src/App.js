@@ -2,24 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
 import { format, isToday, isFuture, isPast, startOfWeek, differenceInMilliseconds, endOfDay } from 'date-fns';
 import './App.css';
-
-// Import Firebase functions
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase';
+import { inject } from '@vercel/analytics'; // Vercel Analytics
+import TagManager from 'react-gtm-module'; // Google Tag Manager module
 
-// Import Vercel Analytics
-import { inject } from '@vercel/analytics';
+// Initialize Vercel Analytics 
 inject();
-
-// Import Google Tag Manager module
-import TagManager from 'react-gtm-module';
-
-const ALERT_SOUND = '/message-alert.mp3';
 
 // Initialize GTM
 const tagManagerArgs = {
   gtmId: 'GTM-NPK8MNRQ', // Replace with your GTM container ID
 };
 TagManager.initialize(tagManagerArgs);
+
+const ALERT_SOUND = '/message-alert.mp3';
 
 function App() {
   const [tasks, setTasks] = useState([]);
