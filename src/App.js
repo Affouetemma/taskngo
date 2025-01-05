@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
 import { format, isToday, isFuture, isPast, startOfWeek, differenceInMilliseconds, endOfDay } from 'date-fns';
 import './App.css';
@@ -37,15 +37,15 @@ function App() {
     requestNotificationPermission();
   }, []);
 
-  const handleScheduleClick = (taskId) => {
+  const handleScheduleClick = useCallback((taskId) => {
     const task = tasks.find(t => t.id === taskId);
     if (task && notificationPermission) {
       notificationService.scheduleNotification(task);
     }
     setScheduleAlert({ show: true, taskId });
-  };
+  }, [tasks, notificationPermission]);
 
-  const addTask = () => {
+  const addTask = useCallback(() => {
     if (newTask.trim() && taskDate) {
       const task = {
         id: Date.now(),
@@ -68,40 +68,39 @@ function App() {
     } else {
       alert("Please provide both a task and a date.");
     }
-  };
+  }, [newTask, taskDate, notificationPermission]);
 
-  const deleteTask = (id) => {
-    notificationService.cancelNotification(id);  // Cancel any scheduled notifications
-    setTasks(tasks.filter((task) => task.id !== id));
-  };
+  const deleteTask = useCallback((id) => {
+    notificationService.cancelNotification(id);
+    setTasks(prevTasks => prevTasks.filter((task) => task.id !== id));
+  }, []);
 
-  const archiveTask = (id) => {
-    notificationService.cancelNotification(id);  // Cancel notification when archived
-    setTasks(tasks.map((task) =>
+  const archiveTask = useCallback((id) => {
+    notificationService.cancelNotification(id);
+    setTasks(prevTasks => prevTasks.map((task) =>
       task.id === id ? { ...task, archived: true } : task
     ));
-  };
+  }, []);
 
-  const completeTask = (id) => {
+  const completeTask = useCallback((id) => {
     setCompletionPopup({ show: true, taskId: id });
-  };
+  }, []);
 
-  const resetTasks = () => {
-    // Cancel all notifications for existing tasks
+  const resetTasks = useCallback(() => {
     tasks.forEach(task => {
       notificationService.cancelNotification(task.id);
     });
     setTasks([]);
     setAlertVisible(true);
-  };
+  }, [tasks]);
 
-  const handleCompletionResponse = (response) => {
+  const handleCompletionResponse = useCallback((response) => {
     if (completionPopup.taskId) {
       setTasks(prevTasks => {
         return prevTasks.map((task) => {
           if (task.id === completionPopup.taskId) {
             if (response === 'yes') {
-              notificationService.cancelNotification(task.id);  // Cancel notification when completed
+              notificationService.cancelNotification(task.id);
               return { ...task, completed: true };
             } else if (response === 'no') {
               return { ...task, alertPlayed: true };
@@ -112,14 +111,14 @@ function App() {
       });
     }
     setCompletionPopup({ show: false, taskId: null });
-  };
+  }, [completionPopup.taskId]);
 
-  const handleWidgetRating = async (ratingValue) => {
+  const handleWidgetRating = useCallback(async (ratingValue) => {
     setWidgetRating(ratingValue);
     const userId = Date.now().toString();
     await addUserRating(userId, ratingValue);
     await updateAverageRating();
-  };
+  }, []);
 
   // Weekly reset effect
   useEffect(() => {
@@ -130,7 +129,7 @@ function App() {
       resetTasks();
     }, timeUntilReset);
     return () => clearTimeout(resetTimer);
-  }, []);
+  }, [resetTasks]);
 
   // Task monitoring effect
   useEffect(() => {
@@ -174,7 +173,7 @@ function App() {
           }
 
           if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
-            notificationService.cancelNotification(task.id);  // Cancel notification for archived tasks
+            notificationService.cancelNotification(task.id);
             return { ...task, archived: true };
           }
 
@@ -185,7 +184,7 @@ function App() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [completionPopup]);
+  }, [completionPopup.show]);
 
   // Fetch rating effect
   useEffect(() => {
@@ -206,10 +205,11 @@ function App() {
 
     navigator.serviceWorker.addEventListener('message', handleMessage);
     return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
-  }, []);
+  }, [completeTask]);
 
   return (
     <div className="App">
+      <Analytics />
       {scheduleAlert.show && (
         <div className="completion-popup">
           <p>This task has been scheduled!</p>
