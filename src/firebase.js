@@ -28,21 +28,34 @@ const taskngoDoc = "Taskngo"; // Document ID
 // Function to request and retrieve the messaging token
 export async function requestFirebaseToken() {
   try {
-    const token = await getToken(messaging, {
-      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY, // Set your VAPID key in the environment
-    });
-    if (token) {
-      console.log("Firebase Messaging Token:", token);
-      return token; // Send this token to your server for sending notifications
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      // Register the Service Worker
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+      // Get the FCM token
+      const token = await getToken(messaging, {
+        vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
+        serviceWorkerRegistration: registration, // Pass the SW registration
+      });
+
+      if (token) {
+        console.log('Firebase Messaging Token:', token);
+        return token;
+      } else {
+        console.warn('No registration token available. Request permission to generate one.');
+        return null;
+      }
     } else {
-      console.warn("No registration token available. Request permission to generate one.");
+      console.warn('Notification permission not granted.');
       return null;
     }
   } catch (error) {
-    console.error("Error getting messaging token:", error);
+    console.error('Error getting messaging token:', error);
     return null;
   }
 }
+
 
 // Listener for foreground messages
 export function onMessageListener() {
