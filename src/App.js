@@ -3,13 +3,13 @@ import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa'
 import { format, isToday, isFuture, isPast, startOfWeek, differenceInMilliseconds, endOfDay } from 'date-fns';
 import './App.css';
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase';
-import { Analytics } from "@vercel/analytics/react"; // Add this import
-import TagManager from 'react-gtm-module'; // Google Tag Manager module
-
+import { Analytics } from "@vercel/analytics/react";
+import TagManager from 'react-gtm-module';
+import notificationService from './sendNotification';
 
 // Initialize GTM
 const tagManagerArgs = {
-  gtmId: 'GTM-NPK8MNRQ', // Replace with your GTM container ID
+  gtmId: 'GTM-NPK8MNRQ',
 };
 TagManager.initialize(tagManagerArgs);
 
@@ -22,10 +22,26 @@ function App() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [completionPopup, setCompletionPopup] = useState({ show: false, taskId: null });
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
-  const [widgetRating, setWidgetRating] = useState(0); // Widget-wide rating state
+  const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(new Audio(ALERT_SOUND));
+  const [notificationPermission, setNotificationPermission] = useState(false);
+
+  // Request notification permission when the app loads
+  useEffect(() => {
+    const requestNotificationPermission = async () => {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission === 'granted');
+      }
+    };
+    requestNotificationPermission();
+  }, []);
 
   const handleScheduleClick = (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task && notificationPermission) {
+      notificationService.scheduleNotification(task);
+    }
     setScheduleAlert({ show: true, taskId });
   };
 
@@ -41,6 +57,12 @@ function App() {
         alertPlayed: false,
       };
       setTasks((prevTasks) => [...prevTasks, task]);
+      
+      // Schedule notification for the new task if permission granted
+      if (notificationPermission) {
+        notificationService.scheduleNotification(task);
+      }
+      
       setNewTask('');
       setTaskDate('');
     } else {
@@ -49,25 +71,29 @@ function App() {
   };
 
   const deleteTask = (id) => {
+    notificationService.cancelNotification(id);  // Cancel any scheduled notifications
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
   const archiveTask = (id) => {
+    notificationService.cancelNotification(id);  // Cancel notification when archived
     setTasks(tasks.map((task) =>
       task.id === id ? { ...task, archived: true } : task
     ));
   };
 
-  // Show the popup only when the "validate" icon is clicked
   const completeTask = (id) => {
     setCompletionPopup({ show: true, taskId: id });
   };
 
   const resetTasks = () => {
+    // Cancel all notifications for existing tasks
+    tasks.forEach(task => {
+      notificationService.cancelNotification(task.id);
+    });
     setTasks([]);
     setAlertVisible(true);
   };
-
 
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
@@ -75,35 +101,27 @@ function App() {
         return prevTasks.map((task) => {
           if (task.id === completionPopup.taskId) {
             if (response === 'yes') {
-              // Mark the task as completed and move it to "Completed"
+              notificationService.cancelNotification(task.id);  // Cancel notification when completed
               return { ...task, completed: true };
             } else if (response === 'no') {
-              // Keep the task in "Today's Tasks" and mark alert as played
-              return { ...task, alertPlayed: true };  // Mark alert as played so we don't show it again
+              return { ...task, alertPlayed: true };
             }
           }
           return task;
         });
       });
     }
-  
-    // Close the popup after either "Yes" or "No" is clicked
     setCompletionPopup({ show: false, taskId: null });
   };
-  
 
   const handleWidgetRating = async (ratingValue) => {
-    setWidgetRating(ratingValue); // Update the rating value in the state
-
-    // Generate a unique ID for the user (e.g., using the current timestamp or UUID)
-    const userId = Date.now().toString();  // Using timestamp as a unique ID
-    
-    await addUserRating(userId, ratingValue);  // Update Firestore with the new user rating
-    
-    // Update the average rating in Firebase after adding the user's rating
+    setWidgetRating(ratingValue);
+    const userId = Date.now().toString();
+    await addUserRating(userId, ratingValue);
     await updateAverageRating();
   };
 
+  // Weekly reset effect
   useEffect(() => {
     const now = new Date();
     const nextSundayMidnight = startOfWeek(now, { weekStartsOn: 0 }).setHours(24, 0, 0, 0);
@@ -114,76 +132,80 @@ function App() {
     return () => clearTimeout(resetTimer);
   }, []);
 
+  // Task monitoring effect
   useEffect(() => {
     const interval = setInterval(() => {
-        const now = new Date();
-        setTasks((prevTasks) => {
-            const updatedTasks = prevTasks.map((task) => {
-                const timeRemaining = task.date - now;
-                console.log(`Task ID: ${task.id} | Time Remaining: ${timeRemaining}ms`);
+      const now = new Date();
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) => {
+          const timeRemaining = task.date - now;
+          console.log(`Task ID: ${task.id} | Time Remaining: ${timeRemaining}ms`);
 
-                // Move task to "Today" if its scheduled date matches today's date
-                if (isFuture(task.date) && !task.archived && !task.completed) {
-                    if (format(task.date, 'MM/dd/yyyy') === format(now, 'MM/dd/yyyy') && !isToday(task.date)) {
-                        return { ...task, date: now };  // Move the task to "Today" by setting the date to `now`
-                    }
-                }
+          if (isFuture(task.date) && !task.archived && !task.completed) {
+            if (format(task.date, 'MM/dd/yyyy') === format(now, 'MM/dd/yyyy') && !isToday(task.date)) {
+              return { ...task, date: now };
+            }
+          }
 
-                // Show clock icon for today's tasks or upcoming tasks
-                const showClockIcon = (isToday(task.date) || isFuture(task.date)) && !task.archived && !task.completed;
-                if (showClockIcon) {
-                    task.showClockIcon = true;
-                }
+          const showClockIcon = (isToday(task.date) || isFuture(task.date)) && !task.archived && !task.completed;
+          if (showClockIcon) {
+            task.showClockIcon = true;
+          }
 
-                // Play alert sound and shake the task one minute before the actual time
-                if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
-                    console.log(`Playing sound for task ID: ${task.id}`);
-                    alertAudio.current.play();  // Play the alert sound
-                    return { ...task, alertPlayed: true, isShaking: true };  // Set alertPlayed and isShaking to true
-                }
+          if (isToday(task.date) && timeRemaining <= 60000 && timeRemaining > 0 && !task.alertPlayed) {
+            console.log(`Playing sound for task ID: ${task.id}`);
+            alertAudio.current.play();
+            return { ...task, alertPlayed: true, isShaking: true };
+          }
 
-                // Show completion popup if task is nearing its time and is not completed
-                if (isToday(task.date) &&
-                    (Math.abs(timeRemaining) < 1000 || (timeRemaining > 0 && timeRemaining <= 3600000)) && 
-                    !task.archived && 
-                    !task.completed &&
-                    !task.alertPlayed) {
-                    if (!completionPopup.show) {
-                        setCompletionPopup({ show: true, taskId: task.id });
-                    }
-                    return { ...task, isShaking: false, alertPlayed: true };
-                }
+          if (isToday(task.date) &&
+            (Math.abs(timeRemaining) < 1000 || (timeRemaining > 0 && timeRemaining <= 3600000)) && 
+            !task.archived && 
+            !task.completed &&
+            !task.alertPlayed) {
+            if (!completionPopup.show) {
+              setCompletionPopup({ show: true, taskId: task.id });
+            }
+            return { ...task, isShaking: false, alertPlayed: true };
+          }
 
-                // Remove shaking after the task's time has passed and if completed or archived
-                if (timeRemaining <= 0) {
-                    if (task.completed) {
-                        return { ...task, isShaking: false };  // Task completed, no need for shaking
-                    }
-                    return { ...task, isShaking: false }; // Task not completed, no need for shaking
-                }
+          if (timeRemaining <= 0) {
+            return { ...task, isShaking: false };
+          }
 
-                // Archive tasks that are past the end of their due date
-                if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
-                    return { ...task, archived: true };
-                }
+          if (!isToday(task.date) && isPast(endOfDay(task.date)) && !task.completed && !task.archived) {
+            notificationService.cancelNotification(task.id);  // Cancel notification for archived tasks
+            return { ...task, archived: true };
+          }
 
-                return task;
-            });
-            return updatedTasks;
+          return task;
         });
+        return updatedTasks;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-}, [completionPopup]);
+  }, [completionPopup]);
 
-
+  // Fetch rating effect
   useEffect(() => {
     const fetchRating = async () => {
       const avgRating = await fetchAverageRating();
-      setWidgetRating(avgRating); // Fetch and set the average rating from Firebase
+      setWidgetRating(avgRating);
+    };
+    fetchRating();
+  }, []);
+
+  // Listen for notification-related messages from service worker
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'COMPLETE_TASK') {
+        completeTask(event.data.taskId);
+      }
     };
 
-    fetchRating(); // Fetch the current average rating when the component mounts
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
   }, []);
 
   return (
@@ -301,7 +323,6 @@ function App() {
           </div>
         </div>
 
-        {/* Widget Rating Section */}
         <div className="widget-rating">
           <h3>Rate this Widget:</h3>
           <div className="star-rating">
@@ -328,26 +349,24 @@ function App() {
 
 const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick }) => {
   return (
-      <div className={`task-item ${task.isShaking ? 'shake' : ''}`}>
-          <span>{task.text}</span>
-          <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
-          <div className="icons">
-              {/* Clock icon for Today or Upcoming tasks */}
-              {task.showClockIcon && !task.archived && !task.completed && <FaClock className="icon clock-icon" />}
-              {isFuture(task.date) && !task.archived && !task.completed && (
-                  <FaBell className="icon alert-icon" onClick={() => onScheduleClick(task.id)} />
-              )}
-              {!task.archived && (
-                  <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
-              )}
-              {!task.completed && (
-                  <FaCheck onClick={() => completeTask(task.id)} className="icon" />
-              )}
-              <FaTrashAlt onClick={() => deleteTask(task.id)} className="icon" />
-          </div>
+    <div className={`task-item ${task.isShaking ? 'shake' : ''}`}>
+      <span>{task.text}</span>
+      <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
+      <div className="icons">
+        {task.showClockIcon && !task.archived && !task.completed && <FaClock className="icon clock-icon" />}
+        {isFuture(task.date) && !task.archived && !task.completed && (
+          <FaBell className="icon alert-icon" onClick={() => onScheduleClick(task.id)} />
+        )}
+        {!task.archived && (
+          <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
+        )}
+        {!task.completed && (
+          <FaCheck onClick={() => completeTask(task.id)} className="icon" />
+        )}
+        <FaTrashAlt onClick={() => deleteTask(task.id)} className="icon" />
       </div>
+    </div>
   );
 };
 
 export default App;
-

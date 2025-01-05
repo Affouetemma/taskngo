@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore, doc, updateDoc, getDoc } from "firebase/firestore";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Your web app's Firebase configuration from environment variables
 const firebaseConfig = {
@@ -18,10 +19,40 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
+const messaging = getMessaging(app);
 
 // Firestore collection and document references
 const ratingsCollection = "ratings"; // Collection name
 const taskngoDoc = "Taskngo"; // Document ID
+
+// Function to request and retrieve the messaging token
+export async function requestFirebaseToken() {
+  try {
+    const token = await getToken(messaging, {
+      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY, // Set your VAPID key in the environment
+    });
+    if (token) {
+      console.log("Firebase Messaging Token:", token);
+      return token; // Send this token to your server for sending notifications
+    } else {
+      console.warn("No registration token available. Request permission to generate one.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting messaging token:", error);
+    return null;
+  }
+}
+
+// Listener for foreground messages
+export function onMessageListener() {
+  return new Promise((resolve) => {
+    onMessage(messaging, (payload) => {
+      console.log("Message received. ", payload);
+      resolve(payload);
+    });
+  });
+}
 
 // Function to add or update a user's rating
 export async function addUserRating(userId, userRating) {
@@ -138,4 +169,4 @@ export async function fetchUserRating(userId) {
   }
 }
 
-export { db, analytics };
+export { analytics, db, messaging };
