@@ -133,3 +133,4 @@ dist
 taskngo-clean/
 /build/
 generateVapidKeys.js
+.env.development
