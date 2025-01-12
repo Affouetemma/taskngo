@@ -1,7 +1,8 @@
 {
   "name": "taskngo",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "@vercel/analytics": "^1.4.1",
     "cra-template": "1.2.0",
@@ -12,6 +13,7 @@
     "react-ga4": "^2.1.0",
     "react-gtm-module": "^2.0.11",
     "react-icons": "^5.4.0",
+    "react-onesignal": "^3.0.1",
     "react-scripts": "5.0.1",
     "web-push": "^3.6.7",
     "web-vitals": "^4.2.4"

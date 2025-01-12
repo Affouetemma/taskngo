@@ -134,3 +134,7 @@ taskngo-clean/
 /build/
 generateVapidKeys.js
 .env.development
+.env.
+public/OneSignalSDKWorker.js
+src/oneSignalInit.js
+src/setupProxy.js
