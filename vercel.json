@@ -14,6 +14,19 @@
         ]
       },
       {
+        "source": "/OneSignalSDKUpdaterWorker.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          },
+          {
+            "key": "Service-Worker-Allowed",
+            "value": "/"
+          }
+        ]
+      },
+      {
         "source": "/OneSignalSDK.js",
         "headers": [
           {
@@ -23,14 +36,18 @@
         ]
       }
     ],
-    "routes": [
+    "rewrites": [
       {
-        "src": "/OneSignalSDKWorker.js",
-        "dest": "/OneSignalSDKWorker.js"
+        "source": "/OneSignalSDKWorker.js",
+        "destination": "/OneSignalSDKWorker.js"
       },
       {
-        "src": "/OneSignalSDK.js",
-        "dest": "/OneSignalSDK.js"
+        "source": "/OneSignalSDKUpdaterWorker.js",
+        "destination": "/OneSignalSDKUpdaterWorker.js"
+      },
+      {
+        "source": "/OneSignalSDK.js",
+        "destination": "/OneSignalSDK.js"
       }
     ]
   }
