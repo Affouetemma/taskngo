@@ -2,83 +2,44 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore, doc, updateDoc, getDoc } from "firebase/firestore";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// Your web app's Firebase configuration from environment variables
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
   storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
-const messaging = getMessaging(app);
 
 // Firestore collection and document references
-const ratingsCollection = "ratings"; // Collection name
-const taskngoDoc = "Taskngo"; // Document ID
-
-// Function to request and retrieve the messaging token
-export async function requestFirebaseToken() {
-  try {
-    const token = await getToken(messaging, {
-      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY, // Set your VAPID key in the environment
-    });
-    if (token) {
-      console.log("Firebase Messaging Token:", token);
-      return token; // Send this token to your server for sending notifications
-    } else {
-      console.warn("No registration token available. Request permission to generate one.");
-      return null;
-    }
-  } catch (error) {
-    console.error("Error getting messaging token:", error);
-    return null;
-  }
-}
-
-// Listener for foreground messages
-export function onMessageListener() {
-  return new Promise((resolve) => {
-    onMessage(messaging, (payload) => {
-      console.log("Message received. ", payload);
-      resolve(payload);
-    });
-  });
-}
+const ratingsCollection = "ratings";
+const taskngoDoc = "Taskngo";
 
 // Function to add or update a user's rating
 export async function addUserRating(userId, userRating) {
   const taskngoRef = doc(db, ratingsCollection, taskngoDoc);
 
   try {
-    // Fetch the existing document data
     const taskngoSnapshot = await getDoc(taskngoRef);
 
     if (taskngoSnapshot.exists()) {
       const data = taskngoSnapshot.data();
       const userRatings = data.userRatings || {};
-
-      // Update the user's rating in the userRatings map
       userRatings[userId] = userRating;
 
-      // Update the userRatings map in Firestore
       await updateDoc(taskngoRef, {
         userRatings,
       });
 
       console.log("User rating added/updated successfully.");
-      
-      // After updating user ratings, recalculate the average rating
       await updateAverageRating();
-
     } else {
       console.error("Document does not exist!");
     }
@@ -98,28 +59,13 @@ export async function updateAverageRating() {
       const data = taskngoSnapshot.data();
       const userRatings = data.userRatings || {};
 
-      // Calculate the total rating and the average
-      let totalRating = 0;
-      let numberOfRatings = 0;
+      const ratings = Object.values(userRatings);
+      const averageRating = ratings.length > 0 
+        ? ratings.reduce((a, b) => a + b) / ratings.length 
+        : 0;
 
-      // Loop through the userRatings to calculate the total rating and the number of ratings
-      for (let userId in userRatings) {
-        totalRating += userRatings[userId];
-        numberOfRatings++;
-      }
-
-      // If there are ratings, calculate the average
-      if (numberOfRatings > 0) {
-        const averageRating = totalRating / numberOfRatings;
-
-        // Update the averageRating field in Firestore
-        await updateDoc(taskngoRef, { averageRating });
-        console.log("Average rating updated successfully.");
-      } else {
-        console.error("No ratings available to calculate the average.");
-      }
-    } else {
-      console.error("Document does not exist!");
+      await updateDoc(taskngoRef, { averageRating });
+      console.log("Average rating updated successfully.");
     }
   } catch (error) {
     console.error("Error updating average rating:", error);
@@ -132,41 +78,11 @@ export async function fetchAverageRating() {
 
   try {
     const docSnap = await getDoc(taskngoRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return data.averageRating || 0; // Return the average rating or 0 if not set
-    } else {
-      console.error("No such document!");
-      return 0; // Default value if document doesn't exist
-    }
+    return docSnap.exists() ? (docSnap.data().averageRating || 0) : 0;
   } catch (error) {
     console.error("Error fetching average rating:", error);
-    throw error;
+    return 0;
   }
 }
 
-// Function to fetch a specific user's rating
-export async function fetchUserRating(userId) {
-  const taskngoRef = doc(db, ratingsCollection, taskngoDoc);
-
-  try {
-    const taskngoSnapshot = await getDoc(taskngoRef);
-
-    if (taskngoSnapshot.exists()) {
-      const data = taskngoSnapshot.data();
-      const userRatings = data.userRatings || {};
-
-      // Return the user's rating if it exists, or null otherwise
-      return userRatings[userId] || null;
-    } else {
-      console.error("Document does not exist!");
-      return null;
-    }
-  } catch (error) {
-    console.error("Error fetching user rating:", error);
-    throw error;
-  }
-}
-
-export { analytics, db, messaging };
+export { analytics, db };

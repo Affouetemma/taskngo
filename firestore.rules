@@ -1,0 +1,13 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Match the ratings collection
+    match /ratings/{document=**} {
+      
+      // Allow read access (to fetch the current average rating)
+      allow read: if true;
+      
+      // Allow any user (anonymous) to write (submit a rating)
+      allow write: if true;
+    }
+  }
+}
