@@ -35,19 +35,6 @@
           }
         ]
       }
-    ],
-    "rewrites": [
-      {
-        "source": "/OneSignalSDKWorker.js",
-        "destination": "/OneSignalSDKWorker.js"
-      },
-      {
-        "source": "/OneSignalSDKUpdaterWorker.js",
-        "destination": "/OneSignalSDKUpdaterWorker.js"
-      },
-      {
-        "source": "/OneSignalSDK.js",
-        "destination": "/OneSignalSDK.js"
-      }
     ]
   }
+  
