@@ -1,0 +1,36 @@
+{
+    "headers": [
+      {
+        "source": "/OneSignalSDKWorker.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          },
+          {
+            "key": "Service-Worker-Allowed",
+            "value": "/"
+          }
+        ]
+      },
+      {
+        "source": "/OneSignalSDK.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          }
+        ]
+      }
+    ],
+    "routes": [
+      {
+        "src": "/OneSignalSDKWorker.js",
+        "dest": "/OneSignalSDKWorker.js"
+      },
+      {
+        "src": "/OneSignalSDK.js",
+        "dest": "/OneSignalSDK.js"
+      }
+    ]
+  }
