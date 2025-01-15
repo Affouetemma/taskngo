@@ -14,6 +14,8 @@ export const initializeOneSignal = () => {
       serviceWorkerPath: '/OneSignalSDKWorker.js',
       serviceWorkerParam: { scope: '/' }, // Added for proper scope
       serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
+      path: '/',
+      subdomainName: undefined,
       notifyButton: {
         enable: true,
         size: 'medium',
