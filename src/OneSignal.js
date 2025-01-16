@@ -16,7 +16,7 @@ export const initializeOneSignal = () => {
 
   window.OneSignal.push(function () {
     window.OneSignal.init({
-      appId: process.env.production.REACT_APP_ONESIGNAL_APP_ID,
+      appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: false, // Changed for production 
       serviceWorkerPath: '/',
       serviceWorkerParam: { scope: '/' },
@@ -56,7 +56,7 @@ export const initializeOneSignal = () => {
         title: 'Taskngo',
         message: 'Thanks for subscribing to task notifications!',
       },
-      persistNotification: false,
+      persistNotification: true,
       webhooks: {
         cors: true,
         'notification.displayed': 'https://taskngo.vercel.app/api/notification-displayed',
@@ -219,10 +219,10 @@ export const sendTaskNotification = async (task) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${process.env.production.REACT_APP_ONESIGNAL_REST_API_KEY}`,
+          'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`,
         },
         body: JSON.stringify({
-          app_id: process.env.production.REACT_APP_ONESIGNAL_APP_ID,
+          app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
           headings: { en: title },
           contents: { en: message },
           url: window.location.origin,
