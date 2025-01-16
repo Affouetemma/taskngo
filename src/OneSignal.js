@@ -4,14 +4,21 @@ export const initializeOneSignal = () => {
     console.error('OneSignal is not loaded');
     return;
   }
-
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/OneSignalSDKWorker.js')
+      .then(reg => console.log('Service Worker registered successfully:', reg))
+      .catch(err => console.error('Service Worker registration failed:', err));
+  } else {
+    console.error('Service Worker not supported in this browser');
+  }
+  
   window.OneSignal = window.OneSignal || [];
 
   window.OneSignal.push(function () {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: false, // Changed for production 
-      serviceWorkerPath: '/OneSignalSDKWorker.js',
+      serviceWorkerPath: '/',
       serviceWorkerParam: { scope: '/' },
       serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
       path: '/',
@@ -44,6 +51,7 @@ export const initializeOneSignal = () => {
           'dialog.button.foreground': 'white',
         },
       },
+      
       welcomeNotification: {
         title: 'Taskngo',
         message: 'Thanks for subscribing to task notifications!',
