@@ -16,7 +16,7 @@ export const initializeOneSignal = () => {
 
   window.OneSignal.push(function () {
     window.OneSignal.init({
-      appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
+      appId: process.env.production.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: false, // Changed for production 
       serviceWorkerPath: '/',
       serviceWorkerParam: { scope: '/' },
@@ -132,36 +132,6 @@ export const initializeOneSignal = () => {
   });
 };
 
-// Test notification sender
-export const testNotification = async () => {
-  try {
-    const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
-    if (!isSubscribed) {
-      console.log('🔔 User is not subscribed to notifications');
-      return;
-    }
-
-    // Send test notification
-    const notification = {
-      title: "Test Notification",
-      message: "This is a test notification from Taskngo",
-      icon: '/logo.png',
-      url: window.location.origin
-    };
-
-    console.log('🔔 Sending test notification:', notification);
-    await window.OneSignal.sendSelfNotification(
-      notification.title,
-      notification.message,
-      notification.url,
-      notification.icon
-    );
-    console.log('🔔 Test notification sent successfully');
-  } catch (error) {
-    console.error('🔔 Error sending test notification:', error);
-  }
-};
-
 // Send Task Notification
 export const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
@@ -249,10 +219,10 @@ export const sendTaskNotification = async (task) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`,
+          'Authorization': `Basic ${process.env.production.REACT_APP_ONESIGNAL_REST_API_KEY}`,
         },
         body: JSON.stringify({
-          app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
+          app_id: process.env.production.REACT_APP_ONESIGNAL_APP_ID,
           headings: { en: title },
           contents: { en: message },
           url: window.location.origin,

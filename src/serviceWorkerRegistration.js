@@ -38,7 +38,7 @@ function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl, {
       // Set scope for OneSignal service worker
-      scope: swUrl.includes('OneSignalSDK') ? '/taskngo/' : '/'
+      scope: swUrl.includes('OneSignalSDK') ? '/taskngo' : '/'
     })
     .then((registration) => {
       console.log('Service Worker registered:', registration);
@@ -113,7 +113,7 @@ function registerPushNotifications(registration) {
           console.log('Notification permission granted.');
 
           // Replace with your VAPID public key
-          const applicationServerKey = urlBase64ToUint8Array('BB4eF13fhG9b7HybGb2o80xY52n7vnCN9AbD9kbbgh9zQj20gtiFfpeipqrbni18Hz7V52ckFbzQaYj3kTxZXjE');
+          const applicationServerKey = urlBase64ToUint8Array('BAWUk-Vo48heY4vJLyv0AQJCaBjdL8GhQbzf5xkSmE4QGzdgbAdXhml5d8UMdLAcVyGNDe-5P1HiwEd0oq5PPOs');
           registration.pushManager
             .subscribe({
               userVisibleOnly: true,
