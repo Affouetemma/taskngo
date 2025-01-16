@@ -5,24 +5,22 @@ export const initializeOneSignal = () => {
     return;
   }
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/OneSignalSDKWorker.js')
+    navigator.serviceWorker.register('/OneSignalSDKWorker.js', { scope: '/' })
       .then(reg => console.log('Service Worker registered successfully:', reg))
       .catch(err => console.error('Service Worker registration failed:', err));
-      console.error('Service Worker is not supported in this browser');
-    }
-    if (!('PushManager' in window)) {
-      console.error('Push notifications are not supported in this browser');
-    }
-
+  } else {
+    console.error('Service Worker not supported in this browser');
+  }
+  
   window.OneSignal = window.OneSignal || [];
 
   window.OneSignal.push(function () {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: false, // Changed for production 
-      serviceWorkerPath: '/',
-      serviceWorkerParam: { scope: '/' },
+      serviceWorkerPath: '/OneSignalSDKWorker.js',
       serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
+      serviceWorkerParam: { scope: '/' },
       path: '/',
       notifyButton: {
         enable: true,
@@ -298,3 +296,6 @@ export const sendTaskNotification = async (task) => {
     throw error;
   }
 };
+navigator.serviceWorker.register('https://cdn.onesignal.com/sdks/OneSignalSDKWorker.js', { scope: '/' })
+  .then(reg => console.log('Service Worker registered successfully:', reg))
+  .catch(err => console.error('Service Worker registration failed:', err));
