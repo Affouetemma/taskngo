@@ -54,21 +54,6 @@ export const initializeOneSignal = () => {
         'notification.displayed': 'https://taskngo.vercel.app/api/notification-displayed',
         'notification.clicked': 'https://taskngo.vercel.app/api/notification-clicked',
         'notification.dismissed': 'https://taskngo.vercel.app/api/notification-dismissed'
-      },
-      promptOptions: {
-        slidedown: {
-          prompts: [
-            {
-              type: "push",
-              autoPrompt: true,
-              text: {
-                actionMessage: "Would you like to receive task notifications?",
-                acceptButton: "Allow",
-                cancelButton: "No thanks"
-              }
-            }
-          ]
-        }
       }
     });
 
@@ -128,21 +113,13 @@ export const initializeOneSignal = () => {
     window.OneSignal.getUserId()
       .then(userId => {
         console.log('🔔 OneSignal initialized. User ID:', userId);
-        if (!userId) {
-          console.warn('🔔 OneSignal initialization complete but no user ID obtained');
-          return window.OneSignal.showSlidedownPrompt();
-        }
         return window.OneSignal.getNotificationPermission();
       })
       .then(permission => {
         console.log('🔔 Initial permission status:', permission);
-        if (permission === 'default') {
-          return window.OneSignal.showSlidedownPrompt();
-        }
       })
       .catch(error => {
         console.error('🔔 OneSignal initialization error:', error);
-        window.OneSignal.showSlidedownPrompt();
       });
   });
 };
@@ -176,6 +153,7 @@ export const testNotification = async () => {
     console.error('🔔 Error sending test notification:', error);
   }
 };
+
 // Send Task Notification
 export const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
