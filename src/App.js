@@ -11,10 +11,9 @@ import { initializeOneSignal, sendTaskNotification } from './OneSignal';
 const ALERT_SOUND = '/message-alert.mp3';
 
 // Initialize GTM
-TagManager.initialize({ gtmId: process.env.REACT_APP_GTM_ID });
+TagManager.initialize({ gtmId: 'GTM-NPK8MNRQ' });
 
 function App() {
-  // State declarations
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [taskDate, setTaskDate] = useState('');
@@ -24,48 +23,72 @@ function App() {
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
 
- useEffect(() => {
-  // Add a small delay to ensure OneSignal script is loaded
-  const timer = setTimeout(() => {
+useEffect(() => {
+    // Initialize OneSignal
+    const timer = setTimeout(() => {
+      try {
+        initializeOneSignal();
+        console.log('OneSignal initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize OneSignal:', error);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+  
+  useEffect(() => {
+    // Preload audio
+    alertAudio.current = new Audio(ALERT_SOUND);
+    
+    // Event listeners for better debugging
+    alertAudio.current.addEventListener('canplaythrough', () => {
+      console.log('Audio can play through');
+    });
+  
+    alertAudio.current.addEventListener('error', (e) => {
+      console.error('Audio error:', e);
+    });
+  
+    // Add a load success handler
+    alertAudio.current.addEventListener('loadeddata', () => {
+      console.log('Audio file loaded successfully:', ALERT_SOUND);
+    });
+  
+    // Add suspended state handler (useful for debugging autoplay issues)
+    alertAudio.current.addEventListener('suspend', () => {
+      console.log('Audio loading suspended');
+    });
+  
     try {
-      initializeOneSignal();
-      console.log('OneSignal initialized successfully');
+      alertAudio.current.load();
+      console.log('Audio load initiated:', ALERT_SOUND);
     } catch (error) {
-      console.error('Failed to initialize OneSignal:', error);
+      console.error('Error loading audio:', error);
     }
-  }, 1000);
-
-  return () => clearTimeout(timer);
-}, []);
   
-useEffect(() => {
-  // Preload audio
-  alertAudio.current = new Audio(ALERT_SOUND);
-  alertAudio.current.load();
-  console.log('Audio file loaded:', ALERT_SOUND);
-  
-  // Test audio
-  alertAudio.current.addEventListener('canplaythrough', () => {
-    console.log('Audio can play through');
-  });
-  
-  alertAudio.current.addEventListener('error', (e) => {
-    console.error('Audio error:', e);
-  });
-}, []);
+    // Cleanup function to remove event listeners
+    return () => {
+      if (alertAudio.current) {
+        alertAudio.current.removeEventListener('canplaythrough', () => {});
+        alertAudio.current.removeEventListener('error', () => {});
+        alertAudio.current.removeEventListener('loadeddata', () => {});
+        alertAudio.current.removeEventListener('suspend', () => {});
+      }
+    };
+  }, []);
 
+  useEffect(() => {
+    const handleTaskScheduled = (event) => {
+      console.log('Task scheduled event received:', event.detail);
+      setScheduleAlert({ show: true, taskId: event.detail.taskId });
+      setTimeout(() => setScheduleAlert({ show: false, taskId: null }), 3000);
+    };
 
-// Task scheduled event effect
-useEffect(() => {
-  const handleTaskScheduled = (event) => {
-    console.log('Task scheduled event received:', event.detail);
-    setScheduleAlert({ show: true, taskId: event.detail.taskId });
-    setTimeout(() => setScheduleAlert({ show: false, taskId: null }), 3000);
-  };
+    window.addEventListener('taskScheduled', handleTaskScheduled);
+    return () => window.removeEventListener('taskScheduled', handleTaskScheduled);
+  }, []);
 
-  window.addEventListener('taskScheduled', handleTaskScheduled);
-  return () => window.removeEventListener('taskScheduled', handleTaskScheduled);
-}, []);
 
 
   // Handle schedule click with subscription check
@@ -88,18 +111,15 @@ useEffect(() => {
         isShaking: false,
         fiveMinAlert: false,
         oneMinAlert: false,
-        dueAlert: false,
       };
   
       try {
-        // Use the imported sendTaskNotification function
         await sendTaskNotification(task);
         console.log('Notification scheduled for task:', task.text);
       } catch (error) {
         console.error('Error scheduling notification:', error);
       }
       
-      // Add task to state regardless of notification success
       setTasks((prevTasks) => [...prevTasks, task]);
       setNewTask('');
       setTaskDate('');
@@ -107,6 +127,7 @@ useEffect(() => {
       alert("Please provide both a task and a date.");
     }
   };
+      
   const deleteTask = (id) => {
     setTasks(tasks.filter((task) => task.id !== id));
   };
@@ -116,15 +137,15 @@ useEffect(() => {
       task.id === id ? { ...task, archived: true } : task
     ));
   };
-
+  // Only show completion popup when validation icon is clicked
   const completeTask = (id) => {
-    // Only show completion popup when validation icon is clicked
     setCompletionPopup({ show: true, taskId: id });
   };
   
 
   const resetTasks = () => {
     setTasks([]);
+
   };
 
   const handleCompletionResponse = (response) => {
@@ -146,10 +167,31 @@ useEffect(() => {
   };
 
   const handleWidgetRating = async (ratingValue) => {
-    setWidgetRating(ratingValue);
-    const userId = Date.now().toString();
-    await addUserRating(userId, ratingValue);
-    await updateAverageRating();
+    let userId; // Define userId in outer scope so it's available in retry logic
+    
+    try {
+      setWidgetRating(ratingValue);
+      userId = Date.now().toString();
+      await addUserRating(userId, ratingValue);
+      await updateAverageRating();
+      console.log('Rating updated successfully:', ratingValue);
+    } catch (error) {
+      if (error.code === 'failed-precondition' || error.code === 'unavailable') {
+        console.log('Connection issue detected, retrying...');
+        // Retry after 2 seconds
+        setTimeout(async () => {
+          try {
+            await addUserRating(userId, ratingValue);
+            await updateAverageRating();
+            console.log('Rating updated successfully on retry');
+          } catch (retryError) {
+            console.error('Failed to update rating after retry:', retryError);
+          }
+        }, 2000);
+      } else {
+        console.error('Error updating rating:', error);
+      }
+    }
   };
   // Effect for weekly task reset
   useEffect(() => {
@@ -216,74 +258,49 @@ useEffect(() => {
 
 
        // Handle 1-minute alert
-       if (isToday(taskDate) && 
-       timeRemaining <= oneMinute && 
-       timeRemaining > oneMinute - 1000 && 
-       !task.oneMinAlert) {
-     console.log('🚨 1-minute alert triggered for:', task.text);
-     
-     alertAudio.current.play()
-       .catch(e => console.error('Audio play error:', e));
-   
-     if (window.OneSignal) {
-       window.OneSignal.isPushNotificationsEnabled()
-         .then(isSubscribed => {
-           if (isSubscribed) {
-             if (window.location.hostname === 'localhost') {
-               new Notification('Urgent Task Reminder', {
-                 body: `⚠️ 1-minute reminder: "${task.text}" is almost due!`,
-                 icon: '/logo.png'
-               });
-             } else {
-               window.OneSignal.createNotification({
-                 heading: { en: "Urgent Task Reminder" },
-                 content: { en: `⚠️ 1-minute reminder: "${task.text}" is almost due!` },
-                 url: window.location.origin,
-                 chrome_web_icon: "/logo.png"
-               });
-             }
-           }
-         })
-         .catch(error => console.error('Push notification error:', error));
-     }
-     
-     return { ...task, oneMinAlert: true, isShaking: true };
-   }
+          if (isToday(taskDate) && 
+            timeRemaining <= oneMinute && 
+            timeRemaining > oneMinute - 1000 && 
+            !task.oneMinAlert) {
+          console.log('🚨 1-minute alert triggered for:', task.text);
+          
+          alertAudio.current.play()
+            .catch(e => console.error('Audio play error:', e));
+        
+          if (window.OneSignal) {
+            window.OneSignal.isPushNotificationsEnabled()
+              .then(isSubscribed => {
+                if (isSubscribed) {
+                  if (window.location.hostname === 'localhost') {
+                    new Notification('Urgent Task Reminder', {
+                      body: `⚠️ 1-minute reminder: "${task.text}" is almost due!`,
+                      icon: '/logo.png'
+                    });
+                  } else {
+                    window.OneSignal.createNotification({
+                      heading: { en: "Urgent Task Reminder" },
+                      content: { en: `⚠️ 1-minute reminder: "${task.text}" is almost due!` },
+                      url: window.location.origin,
+                      chrome_web_icon: "/logo.png"
+                    });
+                  }
+                }
+              })
+              .catch(error => console.error('Push notification error:', error));
+          }
+          
+          return { ...task, oneMinAlert: true, isShaking: true };
+        }
     // Handle due time alert
     if (isToday(taskDate) && 
     timeRemaining <= 0 && 
     timeRemaining > -1000 && 
     !task.dueAlert) {
   console.log('🔔 Task is now due:', task.text);
-  
   alertAudio.current.play()
     .catch(e => console.error('Audio play error:', e));
-
-  if (window.OneSignal) {
-    window.OneSignal.isPushNotificationsEnabled()
-      .then(isSubscribed => {
-        if (isSubscribed) {
-          if (window.location.hostname === 'localhost') {
-            new Notification('Task Due', {
-              body: `🔔 Task "${task.text}" is now due!`,
-              icon: '/logo.png'
-            });
-          } else {
-            window.OneSignal.createNotification({
-              heading: { en: "Task Due" },
-              content: { en: `🔔 Task "${task.text}" is now due!` },
-              url: window.location.origin,
-              chrome_web_icon: "/logo.png"
-            });
-          }
-        }
-      })
-      .catch(error => console.error('Push notification error:', error));
-  }
-  
   return { ...task, dueAlert: true, isShaking: true };
 }
-
         
         // Stop shaking after 10 seconds
         if ((task.fiveMinAlert || task.oneMinAlert || task.dueAlert) && 

@@ -10,12 +10,11 @@ export const initializeOneSignal = () => {
   window.OneSignal.push(function () {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: true,
+      allowLocalhostAsSecureOrigin: false, // Changed for production 
       serviceWorkerPath: '/OneSignalSDKWorker.js',
-      serviceWorkerParam: { scope: '/' }, // Added for proper scope
+      serviceWorkerParam: { scope: '/' },
       serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
       path: '/',
-      subdomainName: undefined,
       notifyButton: {
         enable: true,
         size: 'medium',
@@ -49,36 +48,134 @@ export const initializeOneSignal = () => {
         title: 'Taskngo',
         message: 'Thanks for subscribing to task notifications!',
       },
-      persistNotification: false, // Added to auto-dismiss notifications
+      persistNotification: false,
       webhooks: {
-        cors: true
+        cors: true,
+        'notification.displayed': 'https://taskngo.vercel.app/api/notification-displayed',
+        'notification.clicked': 'https://taskngo.vercel.app/api/notification-clicked',
+        'notification.dismissed': 'https://taskngo.vercel.app/api/notification-dismissed'
+      },
+      promptOptions: {
+        slidedown: {
+          prompts: [
+            {
+              type: "push",
+              autoPrompt: true,
+              text: {
+                actionMessage: "Would you like to receive task notifications?",
+                acceptButton: "Allow",
+                cancelButton: "No thanks"
+              }
+            }
+          ]
+        }
       }
     });
 
-    // Added detailed logging
+    // Debug logs for testing
+    const debugOneSignalState = async () => {
+      try {
+        const isEnabled = await window.OneSignal.isPushNotificationsEnabled();
+        console.log('🔔 Push notifications enabled:', isEnabled);
+
+        const subscription = await window.OneSignal.getSubscription();
+        console.log('🔔 Current subscription state:', subscription);
+
+        const userId = await window.OneSignal.getUserId();
+        console.log('🔔 OneSignal User ID:', userId);
+
+        const permission = await window.OneSignal.getNotificationPermission();
+        console.log('🔔 Notification permission:', permission);
+      } catch (error) {
+        console.error('Error checking OneSignal state:', error);
+      }
+    };
+
+    // Run debug checks immediately
+    debugOneSignalState();
+
+    // Permission change handler
     window.OneSignal.on('notificationPermissionChange', function(permissionChange) {
-      console.log('New permission state:', permissionChange.to);
+      console.log('🔔 Permission state changed:', permissionChange.to);
+      debugOneSignalState(); // Check state after permission change
     });
 
+    // Subscription change handler
     window.OneSignal.on('subscriptionChange', function(isSubscribed) {
-      console.log('Subscription state changed:', isSubscribed);
+      console.log('🔔 Subscription state changed:', isSubscribed);
+      if (isSubscribed) {
+        window.OneSignal.getUserId().then(function(userId) {
+          console.log('🔔 New subscription - User ID:', userId);
+        });
+      }
+      debugOneSignalState(); // Check state after subscription change
     });
 
+    // Notification handlers for testing
+    window.OneSignal.on('notification.displayed', function(notification) {
+      console.log('🔔 Notification displayed:', notification);
+    });
+
+    window.OneSignal.on('notification.clicked', function(notification) {
+      console.log('🔔 Notification clicked:', notification);
+    });
+
+    window.OneSignal.on('notification.dismissed', function(notification) {
+      console.log('🔔 Notification dismissed:', notification);
+    });
+
+    // Initialize promise chain
     window.OneSignal.getUserId()
       .then(userId => {
-        console.log('OneSignal initialized. User ID:', userId);
+        console.log('🔔 OneSignal initialized. User ID:', userId);
         if (!userId) {
-          console.warn('OneSignal initialization complete but no user ID obtained');
+          console.warn('🔔 OneSignal initialization complete but no user ID obtained');
+          return window.OneSignal.showSlidedownPrompt();
         }
         return window.OneSignal.getNotificationPermission();
       })
       .then(permission => {
-        console.log('Notification permission status:', permission);
+        console.log('🔔 Initial permission status:', permission);
+        if (permission === 'default') {
+          return window.OneSignal.showSlidedownPrompt();
+        }
       })
-      .catch(error => console.error('OneSignal initialization error:', error));
+      .catch(error => {
+        console.error('🔔 OneSignal initialization error:', error);
+        window.OneSignal.showSlidedownPrompt();
+      });
   });
 };
 
+// Test notification sender
+export const testNotification = async () => {
+  try {
+    const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
+    if (!isSubscribed) {
+      console.log('🔔 User is not subscribed to notifications');
+      return;
+    }
+
+    // Send test notification
+    const notification = {
+      title: "Test Notification",
+      message: "This is a test notification from Taskngo",
+      icon: '/logo.png',
+      url: window.location.origin
+    };
+
+    console.log('🔔 Sending test notification:', notification);
+    await window.OneSignal.sendSelfNotification(
+      notification.title,
+      notification.message,
+      notification.url,
+      notification.icon
+    );
+    console.log('🔔 Test notification sent successfully');
+  } catch (error) {
+    console.error('🔔 Error sending test notification:', error);
+  }
+};
 // Send Task Notification
 export const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
@@ -166,7 +263,7 @@ export const sendTaskNotification = async (task) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`, // Changed from Bearer to Basic
+          'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`,
         },
         body: JSON.stringify({
           app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
