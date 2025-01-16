@@ -1,6 +1,6 @@
 {
   "short_name": "Taskngo",
-  "name": "Taskngo Widget",
+  "name": "Taskngo",
   "icons": [
     {
       "src": "favicon.ico",
@@ -47,7 +47,7 @@
       "form_factor": "wide"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#ffffff",
   "background_color": "#ffffff",

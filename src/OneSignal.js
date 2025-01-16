@@ -8,10 +8,12 @@ export const initializeOneSignal = () => {
     navigator.serviceWorker.register('/OneSignalSDKWorker.js')
       .then(reg => console.log('Service Worker registered successfully:', reg))
       .catch(err => console.error('Service Worker registration failed:', err));
-  } else {
-    console.error('Service Worker not supported in this browser');
-  }
-  
+      console.error('Service Worker is not supported in this browser');
+    }
+    if (!('PushManager' in window)) {
+      console.error('Push notifications are not supported in this browser');
+    }
+
   window.OneSignal = window.OneSignal || [];
 
   window.OneSignal.push(function () {
