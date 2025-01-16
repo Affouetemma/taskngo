@@ -2,16 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
 import { format, isToday, isFuture, startOfWeek, differenceInMilliseconds } from 'date-fns';
 import { Analytics } from "@vercel/analytics/react";
-import TagManager from 'react-gtm-module';
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase';
 import './App.css';
 import { initializeOneSignal, sendTaskNotification } from './OneSignal';
 
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
-
-// Initialize GTM
-TagManager.initialize({ gtmId: 'GTM-NPK8MNRQ' });
 
 function App() {
   const [tasks, setTasks] = useState([]);
