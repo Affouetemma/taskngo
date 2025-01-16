@@ -38,7 +38,7 @@ function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl, {
       // Set scope for OneSignal service worker
-      scope: swUrl.includes('OneSignalSDK') ? '/taskngo' : '/'
+      scope: swUrl.includes('OneSignalSDK') ? '/' : '/'
     })
     .then((registration) => {
       console.log('Service Worker registered:', registration);

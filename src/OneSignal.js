@@ -296,6 +296,6 @@ export const sendTaskNotification = async (task) => {
     throw error;
   }
 };
-navigator.serviceWorker.register('https://cdn.onesignal.com/sdks/OneSignalSDKWorker.js', { scope: '/' })
+navigator.serviceWorker.register('https://taskngo.vercel.app/OneSignalSDKWorker.js', { scope: '/' })
   .then(reg => console.log('Service Worker registered successfully:', reg))
   .catch(err => console.error('Service Worker registration failed:', err));
