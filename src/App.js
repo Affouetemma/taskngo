@@ -51,8 +51,7 @@ function App() {
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
-  const [ratingLoading, setRatingLoading] = useState(true);
-
+  
   useEffect(() => {
     // Initialize OneSignal
     const timer = setTimeout(() => {
@@ -73,13 +72,13 @@ function App() {
     const onError = (e) => console.error('Audio error:', e);
     const onLoadedData = () => console.log('Audio file loaded successfully:', ALERT_SOUND);
     const onSuspend = () => console.log('Audio loading suspended');
-    
+  
     alertAudio.current = new Audio(ALERT_SOUND);
     alertAudio.current.addEventListener('canplaythrough', onCanPlayThrough);
     alertAudio.current.addEventListener('error', onError);
     alertAudio.current.addEventListener('loadeddata', onLoadedData);
     alertAudio.current.addEventListener('suspend', onSuspend);
-  
+    
     try {
       alertAudio.current.load();
       console.log('Audio load initiated:', ALERT_SOUND);
@@ -92,11 +91,8 @@ function App() {
       alertAudio.current.removeEventListener('error', onError);
       alertAudio.current.removeEventListener('loadeddata', onLoadedData);
       alertAudio.current.removeEventListener('suspend', onSuspend);
-      alertAudio.current.pause();  // Pausing the audio on cleanup
-      alertAudio.current.currentTime = 0;  // Resetting the playback time
     };
   }, []);
-  
   
 
   useEffect(() => {
@@ -238,24 +234,16 @@ const handleScheduleClick = (taskId) => {
   
 
   useEffect(() => {
-  const fetchRating = async () => {
-    setRatingLoading(true);
-    const avgRating = await fetchAverageRating();
-    setWidgetRating(avgRating);
-    setRatingLoading(false);
-  };
+    const fetchRating = async () => {
+      const avgRating = await fetchAverageRating();
+      setWidgetRating(avgRating);
+    };
 
-  fetchRating();
-}, []);
-
+    fetchRating();
+  }, []);
 
   return (
     <>
-    {ratingLoading ? (
-      <p>Loading rating...</p>
-    ) : (
-      <p>Your Rating: {widgetRating} / 5</p>
-    )}
       <Analytics />
       <div className="App">
         {scheduleAlert.show && (
@@ -416,7 +404,7 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
       <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
       <div className="icons">
         {/* Clock icon for Today or Upcoming tasks */}
-        {isFuture(task.date) && !task.archived && !task.completed && (
+        {task.showClockIcon && !task.archived && !task.completed && (
           <FaClock className="icon clock-icon" />
         )}
         {isFuture(task.date) && !task.archived && !task.completed && (
@@ -425,7 +413,7 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
             onClick={() => onScheduleClick(task.id)}
           />
         )}
-        {!task.archived && !task.completed && (
+        {!task.archived && (
           <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
         )}
         {!task.completed && (
@@ -436,6 +424,5 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
     </div>
   );
 };
-
 
 export default App;
