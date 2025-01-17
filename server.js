@@ -3,14 +3,17 @@ import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
-
 dotenv.config();
 
 const app = express();
-const port = 3001;
+
+// Use port from environment or fallback to 3001
+const port = process.env.PORT || 3001;
+
+// Setup CORS
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' })); // Restrict to production frontend
 
 app.use(express.json()); // For parsing JSON request bodies
-app.use(cors({ origin: true })); // For handling CORS
 
 const handler = async (req, res) => {
   if (req.method !== 'POST') {
@@ -30,8 +33,7 @@ const handler = async (req, res) => {
     const oneSignalPayload = {
       app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
       identifier: userId,
-      notification_types:
-        notificationPermission === 'granted' ? 1 : -2,
+      notification_types: notificationPermission === 'granted' ? 1 : -2,
       device_type: 5,
       tags: {
         subscription_date: new Date().toISOString(),
@@ -83,5 +85,5 @@ app.post('/api/subscribe', handler); // Subscribe route
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
+  console.log(`Server listening at ${process.env.NODE_ENV === 'production' ? '' : 'http://localhost:'}${port}`);
 });

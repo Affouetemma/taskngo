@@ -42,7 +42,6 @@ export const initializeOneSignal = () => {
           'dialog.button.foreground': 'white',
         },
       },
-      
       welcomeNotification: {
         title: 'Taskngo',
         message: 'Thanks for subscribing to task notifications!',
@@ -50,11 +49,10 @@ export const initializeOneSignal = () => {
       persistNotification: true,
       webhooks: {
         cors: true,
-      'notification.displayed': `${window.location.origin}/api/notification-displayed`,
-    'notification.clicked': `${window.location.origin}/api/notification-clicked`,
-    'notification.dismissed': `${window.location.origin}/api/notification-dismissed`
+        'notification.displayed': `${window.location.origin}/api/notification-displayed`,
+        'notification.clicked': `${window.location.origin}/api/notification-clicked`,
+        'notification.dismissed': `${window.location.origin}/api/notification-dismissed`
       }
-      
     });
 
     // Debug logs for testing
@@ -79,8 +77,8 @@ export const initializeOneSignal = () => {
     // Run debug checks immediately
     debugOneSignalState();
 
-    // Permission change handler
-    window.OneSignal.on('subscriptionChange', async function(isSubscribed) {
+    // Subscription change handler
+    window.OneSignal.on('subscriptionChange', async function (isSubscribed) {
       if (isSubscribed) {
         const apiUrl = window.location.hostname === 'localhost'
           ? 'http://localhost:3001/api/subscribe'
@@ -106,12 +104,20 @@ export const initializeOneSignal = () => {
             body: JSON.stringify({
               subscription,
               userId,
-              notificationPermission: permission
+              notificationPermission: permission,
             }),
           });
     
-          const data = await response.json();
-          console.log('Server response:', data);
+          const contentType = response.headers.get('Content-Type');
+    
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            console.log('Server response:', data);
+          } else {
+            const responseText = await response.text();
+            console.error('Expected JSON, but got:', responseText);
+            throw new Error('Received non-JSON response from server');
+          }
           
         } catch (error) {
           console.error('Subscription error:', error);
@@ -120,15 +126,15 @@ export const initializeOneSignal = () => {
     });
 
     // Notification handlers for testing
-    window.OneSignal.on('notification.displayed', function(notification) {
+    window.OneSignal.on('notification.displayed', function (notification) {
       console.log('🔔 Notification displayed:', notification);
     });
 
-    window.OneSignal.on('notification.clicked', function(notification) {
+    window.OneSignal.on('notification.clicked', function (notification) {
       console.log('🔔 Notification clicked:', notification);
     });
 
-    window.OneSignal.on('notification.dismissed', function(notification) {
+    window.OneSignal.on('notification.dismissed', function (notification) {
       console.log('🔔 Notification dismissed:', notification);
     });
 
@@ -273,7 +279,6 @@ export const sendTaskNotification = async (task) => {
     
       return result;
     };
-    
 
     // Schedule notifications
     const promises = [];
