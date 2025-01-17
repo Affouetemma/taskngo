@@ -54,6 +54,7 @@ export const initializeOneSignal = () => {
     'notification.clicked': `${window.location.origin}/api/notification-clicked`,
     'notification.dismissed': `${window.location.origin}/api/notification-dismissed`
       }
+      
     });
 
     // Debug logs for testing

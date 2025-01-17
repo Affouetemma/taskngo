@@ -53,7 +53,6 @@ function App() {
   const alertAudio = useRef(null);
   
   useEffect(() => {
-    // Initialize OneSignal
     const timer = setTimeout(() => {
       try {
         initializeOneSignal();
@@ -62,8 +61,8 @@ function App() {
         console.error('Failed to initialize OneSignal:', error);
       }
     }, 1000);
-
-    return () => clearTimeout(timer);
+  
+    return () => clearTimeout(timer); // Cleanup the timer when the component unmounts
   }, []);
   
   
@@ -125,14 +124,14 @@ const handleScheduleClick = (taskId) => {
         fiveMinAlert: false,
         oneMinAlert: false,
       };
-
+  
       try {
-        await sendTaskNotification(task);
+        await sendTaskNotification(task); // Send the task notification
         console.log('Notification scheduled for task:', task.text);
       } catch (error) {
         console.error('Error scheduling notification:', error);
       }
-
+  
       setTasks((prevTasks) => [...prevTasks, task]);
       setNewTask('');
       setTaskDate('');
@@ -140,7 +139,7 @@ const handleScheduleClick = (taskId) => {
       alert("Please provide both a task and a date.");
     }
   };
-      
+  
   const deleteTask = (id) => {
     setTasks(tasks.filter((task) => task.id !== id));
   };
