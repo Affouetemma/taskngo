@@ -1,8 +1,7 @@
-// config-overrides.js
-const { addWebpackPlugin } = require('customize-cra');
-const WorkboxPlugin = require('workbox-webpack-plugin');
+import { addWebpackPlugin } from 'customize-cra';
+import WorkboxPlugin from 'workbox-webpack-plugin';
 
-module.exports = function override(config, env) {
+export default function override(config, env) {
   // Add the Workbox plugin to generate the service worker
   config = addWebpackPlugin(
     new WorkboxPlugin.GenerateSW({
@@ -11,10 +10,19 @@ module.exports = function override(config, env) {
       maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB limit
       runtimeCaching: [
         {
+          // Cache for API requests
+          urlPattern: /^\/api\//,
+          handler: 'NetworkOnly', // Ensures live responses for API calls
+          options: {
+            cacheName: 'api-cache',
+          },
+        },
+        {
+          // Cache for dynamic content (e.g., HTML)
           urlPattern: /^https?.*/,
           handler: 'NetworkFirst',
           options: {
-            cacheName: 'taskngo-cache',
+            cacheName: 'dynamic-content',
             expiration: {
               maxEntries: 200,
               maxAgeSeconds: 60 * 60 * 24, // 1 day
@@ -29,12 +37,12 @@ module.exports = function override(config, env) {
           urlPattern: /\.(?:js|css|png|jpg|jpeg|svg|gif)$/,
           handler: 'StaleWhileRevalidate',
           options: {
-            cacheName: 'static-resources',
+            cacheName: 'static-assets',
             expiration: {
               maxEntries: 100,
-              maxAgeSeconds: 24 * 60 * 60 // 24 hours
-            }
-          }
+              maxAgeSeconds: 24 * 60 * 60, // 24 hours
+            },
+          },
         },
         {
           // Cache for OneSignal resources
@@ -44,10 +52,10 @@ module.exports = function override(config, env) {
             cacheName: 'onesignal-resources',
             expiration: {
               maxEntries: 50,
-              maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
-            }
-          }
-        }
+              maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+            },
+          },
+        },
       ],
       exclude: [
         /\.map$/,
@@ -56,8 +64,10 @@ module.exports = function override(config, env) {
         /\.js\.map$/,
         /\.css\.map/,
       ],
+      navigateFallback: '/index.html', // Fallback for navigation requests
+      navigateFallbackDenylist: [/^\/api\//], // Ensure API requests aren't served index.html
     })
   )(config);
 
   return config;
-};
+}

@@ -1,11 +1,11 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
-import reportWebVitals from './reportWebVitals';
-import { initializeOneSignal } from './OneSignal'; // Import your OneSignal initialization
+import ReactDOM from 'react-dom/client';  // Corrected import
+import App from './App.js';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration.js';
+import reportWebVitals from './reportWebVitals.js';
+import './OneSignal.js';
 
+// Initialize the root using createRoot from react-dom/client
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
@@ -13,51 +13,48 @@ root.render(
   </React.StrictMode>
 );
 
-// Initialize OneSignal after DOM is loaded
-const initializeNotifications = () => {
-  // Wait for OneSignal to be loaded
+// Function to initialize OneSignal
+const initializeOneSignal = () => {
   if (window.OneSignal) {
-    initializeOneSignal();
-  } else {
-    // If OneSignal isn't loaded yet, wait for the script to load
-    window.addEventListener('load', () => {
-      if (window.OneSignal) {
-        initializeOneSignal();
-      }
+    console.log('Initializing OneSignal...');
+    // Add your OneSignal initialization code here
+    window.OneSignal.init({
+      appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
+      allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
     });
+  } else {
+    console.error('OneSignal is not available on the window object.');
   }
 };
 
-// Register service worker first
-serviceWorkerRegistration.register({
-  onSuccess: () => {
-    console.log('Service Worker registered successfully');
-    initializeNotifications();
-  },
-  onUpdate: () => {
-    console.log('Service Worker updated');
-    initializeNotifications();
-  },
-  onError: (error) => {
-    console.error('Service Worker registration failed:', error);
-    // Still try to initialize OneSignal even if SW fails
-    initializeNotifications();
-  }
+// Function to handle service worker registration and notifications
+const setupServiceWorkerAndNotifications = () => {
+  serviceWorkerRegistration.register({
+    onSuccess: () => {
+      console.log('Service Worker registered successfully');
+      initializeOneSignal();
+    },
+    onUpdate: () => {
+      console.log('Service Worker updated');
+      initializeOneSignal();
+    },
+    onError: (error) => {
+      console.error('Service Worker registration failed:', error);
+      // Attempt to initialize OneSignal even if service worker registration fails
+      initializeOneSignal();
+    },
+  });
+};
+
+// Listen for the DOM to load before initializing notifications
+document.addEventListener('DOMContentLoaded', () => {
+  setupServiceWorkerAndNotifications();
 });
 
 // Performance monitoring
 reportWebVitals(console.log);
 
-// Add error boundary for OneSignal initialization
-window.addEventListener('error', (event) => {
-  if (event.message.includes('OneSignal')) {
-    console.error('OneSignal initialization error:', event.error);
-    // Attempt to reinitialize after a short delay
-    setTimeout(initializeNotifications, 2000);
-  }
-});
-
-// Add debugging for OneSignal loading
+// Debugging OneSignal loading in development
 if (process.env.NODE_ENV === 'development') {
   const checkOneSignalLoading = setInterval(() => {
     if (window.OneSignal) {
@@ -66,6 +63,5 @@ if (process.env.NODE_ENV === 'development') {
     }
   }, 1000);
 
-  // Clear the interval after 10 seconds to prevent infinite checking
-  setTimeout(() => clearInterval(checkOneSignalLoading), 10000);
+  setTimeout(() => clearInterval(checkOneSignalLoading), 10000); // Stop checking after 10 seconds
 }

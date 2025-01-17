@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
 import { format, isToday, isFuture, startOfWeek, differenceInMilliseconds } from 'date-fns';
 import { Analytics } from "@vercel/analytics/react";
-import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase';
+import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
 import './App.css';
-import { initializeOneSignal, sendTaskNotification } from './OneSignal';
+import { initializeOneSignal, sendTaskNotification } from './OneSignal.js';
 
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
