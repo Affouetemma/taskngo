@@ -19,7 +19,7 @@ function App() {
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
 
-useEffect(() => {
+  useEffect(() => {
     // Initialize OneSignal
     const timer = setTimeout(() => {
       try {
@@ -37,7 +37,6 @@ useEffect(() => {
     // Preload audio
     alertAudio.current = new Audio(ALERT_SOUND);
     
-    // Event listeners for better debugging
     alertAudio.current.addEventListener('canplaythrough', () => {
       console.log('Audio can play through');
     });
@@ -46,12 +45,10 @@ useEffect(() => {
       console.error('Audio error:', e);
     });
   
-    // Add a load success handler
     alertAudio.current.addEventListener('loadeddata', () => {
       console.log('Audio file loaded successfully:', ALERT_SOUND);
     });
   
-    // Add suspended state handler (useful for debugging autoplay issues)
     alertAudio.current.addEventListener('suspend', () => {
       console.log('Audio loading suspended');
     });
@@ -63,7 +60,6 @@ useEffect(() => {
       console.error('Error loading audio:', error);
     }
   
-    // Cleanup function to remove event listeners
     return () => {
       if (alertAudio.current) {
         alertAudio.current.removeEventListener('canplaythrough', () => {});
@@ -85,9 +81,6 @@ useEffect(() => {
     return () => window.removeEventListener('taskScheduled', handleTaskScheduled);
   }, []);
 
-
-
-  // Handle schedule click with subscription check
   const handleScheduleClick = (taskId) => {
     setScheduleAlert({ show: true, taskId });
     setTimeout(() => {
@@ -95,7 +88,6 @@ useEffect(() => {
     }, 3000);
   };
 
-  // Task management functions
   const addTask = async () => {
     if (newTask.trim() && taskDate) {
       const task = {
@@ -133,15 +125,13 @@ useEffect(() => {
       task.id === id ? { ...task, archived: true } : task
     ));
   };
-  // Only show completion popup when validation icon is clicked
+
   const completeTask = (id) => {
     setCompletionPopup({ show: true, taskId: id });
   };
-  
 
   const resetTasks = () => {
     setTasks([]);
-
   };
 
   const handleCompletionResponse = (response) => {
@@ -163,7 +153,7 @@ useEffect(() => {
   };
 
   const handleWidgetRating = async (ratingValue) => {
-    let userId; // Define userId in outer scope so it's available in retry logic
+    let userId;
     
     try {
       setWidgetRating(ratingValue);
@@ -174,7 +164,6 @@ useEffect(() => {
     } catch (error) {
       if (error.code === 'failed-precondition' || error.code === 'unavailable') {
         console.log('Connection issue detected, retrying...');
-        // Retry after 2 seconds
         setTimeout(async () => {
           try {
             await addUserRating(userId, ratingValue);
@@ -189,7 +178,7 @@ useEffect(() => {
       }
     }
   };
-  // Effect for weekly task reset
+
   useEffect(() => {
     const now = new Date();
     const nextSundayMidnight = startOfWeek(now, { weekStartsOn: 0 }).setHours(24, 0, 0, 0);
@@ -200,121 +189,99 @@ useEffect(() => {
     return () => clearTimeout(resetTimer);
   }, []);
 
-// Effect for task monitoring and alerts
-useEffect(() => {
-  const interval = setInterval(() => {
-    const now = new Date();
-    setTasks((prevTasks) => {
-      return prevTasks.map((task) => {
-        const taskDate = new Date(task.date);
-        const timeRemaining = taskDate.getTime() - now.getTime();
-        const fiveMinutes = 5 * 60 * 1000;
-        const oneMinute = 60 * 1000;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setTasks((prevTasks) => {
+        return prevTasks.map((task) => {
+          const taskDate = new Date(task.date);
+          const timeRemaining = taskDate.getTime() - now.getTime();
+          const fiveMinutes = 5 * 60 * 1000;
+          const oneMinute = 60 * 1000;
 
-        // Clock icon for today's or future tasks
-        if ((isToday(taskDate) || isFuture(taskDate)) && !task.archived && !task.completed) {
-          task = { ...task, showClockIcon: true };
-        }
-
-       // Handle 5-minute alert
-       if (isToday(taskDate) && 
-    timeRemaining <= fiveMinutes && 
-    timeRemaining > fiveMinutes - 1000 && 
-    !task.fiveMinAlert) {
-  console.log('🚨 5-minute alert triggered for:', task.text);
-  
-  alertAudio.current.play()
-    .catch(e => console.error('Audio play error:', e));
-
-  if (window.OneSignal) {
-    window.OneSignal.isPushNotificationsEnabled()
-      .then(isSubscribed => {
-        if (isSubscribed) {
-          if (window.location.hostname === 'localhost') {
-            new Notification('Task Reminder', {
-              body: `⏰ 5-minute reminder: "${task.text}" is coming up!`,
-              icon: '/logo.png'
-            });
-          } else {
-            window.OneSignal.createNotification({
-              heading: { en: "Task Reminder" },
-              content: { en: `⏰ 5-minute reminder: "${task.text}" is coming up!` },
-              url: window.location.origin,
-              chrome_web_icon: "/logo.png"
-            });
+          if ((isToday(taskDate) || isFuture(taskDate)) && !task.archived && !task.completed) {
+            task = { ...task, showClockIcon: true };
           }
-        }
-      })
-      .catch(error => console.error('Push notification error:', error));
-  }
-  
-  return { ...task, fiveMinAlert: true, isShaking: true };
-}
 
+          if (isToday(taskDate) && timeRemaining <= fiveMinutes && timeRemaining > fiveMinutes - 1000 && !task.fiveMinAlert) {
+            console.log('🚨 5-minute alert triggered for:', task.text);
+            alertAudio.current.play().catch(e => console.error('Audio play error:', e));
 
-
-       // Handle 1-minute alert
-          if (isToday(taskDate) && 
-            timeRemaining <= oneMinute && 
-            timeRemaining > oneMinute - 1000 && 
-            !task.oneMinAlert) {
-          console.log('🚨 1-minute alert triggered for:', task.text);
-          
-          alertAudio.current.play()
-            .catch(e => console.error('Audio play error:', e));
-        
-          if (window.OneSignal) {
-            window.OneSignal.isPushNotificationsEnabled()
-              .then(isSubscribed => {
-                if (isSubscribed) {
-                  if (window.location.hostname === 'localhost') {
-                    new Notification('Urgent Task Reminder', {
-                      body: `⚠️ 1-minute reminder: "${task.text}" is almost due!`,
-                      icon: '/logo.png'
-                    });
-                  } else {
-                    window.OneSignal.createNotification({
-                      heading: { en: "Urgent Task Reminder" },
-                      content: { en: `⚠️ 1-minute reminder: "${task.text}" is almost due!` },
-                      url: window.location.origin,
-                      chrome_web_icon: "/logo.png"
-                    });
+            if (window.OneSignal) {
+              window.OneSignal.isPushNotificationsEnabled()
+                .then(isSubscribed => {
+                  if (isSubscribed) {
+                    if (window.location.hostname === 'localhost') {
+                      new Notification('Task Reminder', {
+                        body: `⏰ 5-minute reminder: "${task.text}" is coming up!`,
+                        icon: '/logo.png'
+                      });
+                    } else {
+                      window.OneSignal.createNotification({
+                        heading: { en: "Task Reminder" },
+                        content: { en: `⏰ 5-minute reminder: "${task.text}" is coming up!` },
+                        url: window.location.origin,
+                        chrome_web_icon: "/logo.png"
+                      });
+                    }
                   }
-                }
-              })
-              .catch(error => console.error('Push notification error:', error));
+                })
+                .catch(error => console.error('Push notification error:', error));
+            }
+            
+            return { ...task, fiveMinAlert: true, isShaking: true };
+          }
+
+          if (isToday(taskDate) && timeRemaining <= oneMinute && timeRemaining > oneMinute - 1000 && !task.oneMinAlert) {
+            console.log('🚨 1-minute alert triggered for:', task.text);
+            alertAudio.current.play().catch(e => console.error('Audio play error:', e));
+          
+            if (window.OneSignal) {
+              window.OneSignal.isPushNotificationsEnabled()
+                .then(isSubscribed => {
+                  if (isSubscribed) {
+                    if (window.location.hostname === 'localhost') {
+                      new Notification('Urgent Task Reminder', {
+                        body: `⚠️ 1-minute reminder: "${task.text}" is almost due!`,
+                        icon: '/logo.png'
+                      });
+                    } else {
+                      window.OneSignal.createNotification({
+                        heading: { en: "Urgent Task Reminder" },
+                        content: { en: `⚠️ 1-minute reminder: "${task.text}" is almost due!` },
+                        url: window.location.origin,
+                        chrome_web_icon: "/logo.png"
+                      });
+                    }
+                  }
+                })
+                .catch(error => console.error('Push notification error:', error));
+            }
+            
+            return { ...task, oneMinAlert: true, isShaking: true };
+          }
+
+          if (isToday(taskDate) && timeRemaining <= 0 && timeRemaining > -1000 && !task.dueAlert) {
+            console.log('🔔 Task is now due:', task.text);
+            alertAudio.current.play().catch(e => console.error('Audio play error:', e));
+            return { ...task, dueAlert: true, isShaking: true };
           }
           
-          return { ...task, oneMinAlert: true, isShaking: true };
-        }
-    // Handle due time alert
-    if (isToday(taskDate) && 
-    timeRemaining <= 0 && 
-    timeRemaining > -1000 && 
-    !task.dueAlert) {
-  console.log('🔔 Task is now due:', task.text);
-  alertAudio.current.play()
-    .catch(e => console.error('Audio play error:', e));
-  return { ...task, dueAlert: true, isShaking: true };
-}
-        
-        // Stop shaking after 10 seconds
-        if ((task.fiveMinAlert || task.oneMinAlert || task.dueAlert) && 
-            ((timeRemaining < fiveMinutes - 10000) || 
-             (timeRemaining < oneMinute - 10000) ||
-             (timeRemaining < -10000))) {
-          return { ...task, isShaking: false };
-        }
+          if ((task.fiveMinAlert || task.oneMinAlert || task.dueAlert) && 
+              ((timeRemaining < fiveMinutes - 10000) || 
+              (timeRemaining < oneMinute - 10000) ||
+              (timeRemaining < -10000))) {
+            return { ...task, isShaking: false };
+          }
 
-        return task;
+          return task;
+        });
       });
-    });
-  }, 1000);
+    }, 1000);
 
-  return () => clearInterval(interval);
-}, [completionPopup]);
+    return () => clearInterval(interval);
+  }, [completionPopup]);
 
-  // Effect for fetching widget rating
   useEffect(() => {
     const fetchRating = async () => {
       const avgRating = await fetchAverageRating();
@@ -323,37 +290,36 @@ useEffect(() => {
 
     fetchRating();
   }, []);
+
   return (
     <>
-    <Analytics />
-    <div className="App">
-      
-
-      {scheduleAlert.show && (
-        <div className="completion-popup">
-          <p>This task has been scheduled!</p>
-          <div className="button-container">
-            <button onClick={() => setScheduleAlert({ show: false, taskId: null })}>OK</button>
+      <Analytics />
+      <div className="App">
+        {scheduleAlert.show && (
+          <div className="completion-popup">
+            <p>This task has been scheduled!</p>
+            <div className="button-container">
+              <button onClick={() => setScheduleAlert({ show: false, taskId: null })}>OK</button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {alertVisible && (
-        <div className="alert">
-          <p>Tasks have been reset for the week!</p>
-          <button onClick={() => setAlertVisible(false)}>&times;</button>
-        </div>
-      )}
-
-      {completionPopup.show && (
-        <div className="completion-popup">
-          <p>Have you completed this task?</p>
-          <div className="button-container">
-            <button onClick={() => handleCompletionResponse('yes')}>Yes</button>
-            <button onClick={() => handleCompletionResponse('no')}>No</button>
+        {alertVisible && (
+          <div className="alert">
+            <p>Tasks have been reset for the week!</p>
+            <button onClick={() => setAlertVisible(false)}>&times;</button>
           </div>
-        </div>
-      )}
+        )}
+
+        {completionPopup.show && (
+          <div className="completion-popup">
+            <p>Have you completed this task?</p>
+            <div className="button-container">
+              <button onClick={() => handleCompletionResponse('yes')}>Yes</button>
+              <button onClick={() => handleCompletionResponse('no')}>No</button>
+            </div>
+          </div>
+        )}
 
         <div className="widget">
           <div className="header">
@@ -400,8 +366,16 @@ useEffect(() => {
             </div>
 
             <div className="category">
-              <h2>Upcoming</h2>
-              {tasks.filter((task) => isFuture(task.date) && !isToday(task.date) && !task.archived && !task.completed).map((task) => (
+            <h2>Upcoming</h2>
+            {tasks
+              .filter(
+                (task) =>
+                  isFuture(task.date) &&
+                  !isToday(task.date) &&
+                  !task.archived &&
+                  !task.completed
+              )
+              .map((task) => (
                 <TaskItem
                   key={task.id}
                   task={task}
@@ -411,84 +385,93 @@ useEffect(() => {
                   onScheduleClick={handleScheduleClick}
                 />
               ))}
-            </div>
-
-            <div className="category completed">
-              <h2>Completed</h2>
-              {tasks.filter((task) => task.completed && !task.archived).map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  deleteTask={deleteTask}
-                  archiveTask={archiveTask}
-                  completeTask={completeTask}
-                  onScheduleClick={handleScheduleClick}
-                />
-              ))}
-            </div>
-
-            <div className="category archived">
-              <h2>Archived</h2>
-              {tasks.filter((task) => task.archived).map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  deleteTask={deleteTask}
-                  archiveTask={archiveTask}
-                  completeTask={completeTask}
-                  onScheduleClick={handleScheduleClick}
-                />
-              ))}
-            </div>
           </div>
 
-          <div className="widget-rating">
-            <h3>Rate this Widget:</h3>
-            <div className="star-rating">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  className={`star ${star <= widgetRating ? 'filled' : ''}`}
-                  onClick={() => handleWidgetRating(star)}
-                >
-                  &#9733;
-                </span>
+          <div className="category completed">
+            <h2>Completed</h2>
+            {tasks
+              .filter((task) => task.completed && !task.archived)
+              .map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  deleteTask={deleteTask}
+                  archiveTask={archiveTask}
+                  completeTask={completeTask}
+                  onScheduleClick={handleScheduleClick}
+                />
               ))}
-            </div>
-            <p>Your Rating: {widgetRating} / 5</p>
           </div>
 
-          <footer className="footer">
-            &copy; Made by Affouet Emmanuella Ouattara. All rights reserved.
-          </footer>
+          <div className="category archived">
+            <h2>Archived</h2>
+            {tasks
+              .filter((task) => task.archived)
+              .map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  deleteTask={deleteTask}
+                  archiveTask={archiveTask}
+                  completeTask={completeTask}
+                  onScheduleClick={handleScheduleClick}
+                />
+              ))}
+          </div>
         </div>
+
+        <div className="widget-rating">
+          <h3>Rate this Widget:</h3>
+          <div className="star-rating">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                className={`star ${star <= widgetRating ? 'filled' : ''}`}
+                onClick={() => handleWidgetRating(star)}
+              >
+                &#9733;
+              </span>
+            ))}
+          </div>
+          <p>Your Rating: {widgetRating} / 5</p>
+        </div>
+
+        <footer className="footer">
+          &copy; Made by Affouet Emmanuella Ouattara. All rights reserved.
+        </footer>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 }
 
-// TaskItem component 
+// TaskItem component
 const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick }) => {
-
   return (
     <div className={`task-item ${task.isShaking ? 'shake' : ''}`}>
-        <span>{task.text}</span>
-        <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
-        <div className="icons">
-            {/* Clock icon for Today or Upcoming tasks */}
-            {task.showClockIcon && !task.archived && !task.completed && <FaClock className="icon clock-icon" />}
-            {isFuture(task.date) && !task.archived && !task.completed && (
-                <FaBell className="icon alert-icon" onClick={() => onScheduleClick(task.id)} />
-            )}
-            {!task.archived && (
-                <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
-            )}
-            {!task.completed && (
-                <FaCheck onClick={() => completeTask(task.id)} className="icon" />
-            )}
-            <FaTrashAlt onClick={() => deleteTask(task.id)} className="icon" />
-        </div>
+      <span>{task.text}</span>
+      <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
+      <div className="icons">
+        {/* Clock icon for Today or Upcoming tasks */}
+        {task.showClockIcon && !task.archived && !task.completed && (
+          <FaClock className="icon clock-icon" />
+        )}
+        {isFuture(task.date) && !task.archived && !task.completed && (
+          <FaBell
+            className="icon alert-icon"
+            onClick={() => onScheduleClick(task.id)}
+          />
+        )}
+        {!task.archived && (
+          <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
+        )}
+        {!task.completed && (
+          <FaCheck onClick={() => completeTask(task.id)} className="icon" />
+        )}
+        <FaTrashAlt onClick={() => deleteTask(task.id)} className="icon" />
+      </div>
     </div>
-);
+  );
 };
+
 export default App;
