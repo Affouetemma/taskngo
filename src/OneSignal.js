@@ -1,18 +1,25 @@
 // Initialize OneSignal
 export const initializeOneSignal = () => {
   if (!window.OneSignal) {
-    console.error('OneSignal is not loaded');
+    console.error('❌ OneSignal is not loaded.');
     return;
   }
 
   window.OneSignal = window.OneSignal || [];
 
-  window.OneSignal.push(function () {
+  const isLocal = window.location.hostname === 'localhost';
+  const apiUrl = isLocal
+    ? 'http://localhost:3001/api'
+    : 'https://taskngo.vercel.app/api';
+
+  // Push initialization to OneSignal
+  window.OneSignal.push(() => {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: false, 
+      allowLocalhostAsSecureOrigin: isLocal,
       serviceWorkerParam: { scope: '/' },
-      path: window.location.origin,
+      path: '/',
+      autoResubscribe: true,
       notifyButton: {
         enable: true,
         size: 'medium',
@@ -43,280 +50,169 @@ export const initializeOneSignal = () => {
         },
       },
       welcomeNotification: {
-        title: 'Taskngo',
-        message: 'Thanks for subscribing to task notifications!',
+        disable: false,
+        title: "Welcome to Taskngo! 🎉",
+        message: "Thanks for subscribing to notifications!",
+        url: window.location.origin
       },
       persistNotification: true,
       webhooks: {
         cors: true,
-        'notification.displayed': `${window.location.origin}/api/notification-displayed`,
-        'notification.clicked': `${window.location.origin}/api/notification-clicked`,
-        'notification.dismissed': `${window.location.origin}/api/notification-dismissed`
-      }
+        'notification.displayed': `${apiUrl}/notification-displayed`,
+        'notification.clicked': `${apiUrl}/notification-clicked`,
+        'notification.dismissed': `${apiUrl}/notification-dismissed`,
+      },
     });
 
-    // Debug logs for testing
-    const debugOneSignalState = async () => {
-      try {
-        const isEnabled = await window.OneSignal.isPushNotificationsEnabled();
-        console.log('🔔 Push notifications enabled:', isEnabled);
-
-        const subscription = await window.OneSignal.getSubscription();
-        console.log('🔔 Current subscription state:', subscription);
-
-        const userId = await window.OneSignal.getUserId();
-        console.log('🔔 OneSignal User ID:', userId);
-
-        const permission = await window.OneSignal.getNotificationPermission();
-        console.log('🔔 Notification permission:', permission);
-      } catch (error) {
-        console.error('Error checking OneSignal state:', error);
-      }
-    };
-
-    // Run debug checks immediately
-    debugOneSignalState();
-
-    // Subscription change handler
-    window.OneSignal.on('subscriptionChange', async function (isSubscribed) {
+    // Handle subscription changes
+    window.OneSignal.on('subscriptionChange', async (isSubscribed) => {
+      console.log(`🔔 Subscription changed:`, isSubscribed);
+      
       if (isSubscribed) {
-        const apiUrl = window.location.hostname === 'localhost'
-          ? 'http://localhost:3001/api/subscribe'
-          : 'https://taskngo.vercel.app/api/subscribe';
-    
         try {
           const userId = await window.OneSignal.getUserId();
-          const permission = await window.OneSignal.getNotificationPermission();
-          const subscription = await window.OneSignal.getSubscription();
           
-          console.log('Attempting subscription with:', {
-            userId,
-            permission,
-            subscription,
-            apiUrl
-          });
-    
-          const response = await fetch(apiUrl, {
+          // Log the subscription
+          console.log('🔔 User subscribed:', userId);
+
+          // Send welcome notification
+          const response = await fetch(`${apiUrl}/send-notification`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              subscription,
               userId,
-              notificationPermission: permission,
+              title: 'Welcome to Taskngo! 🎉',
+              message: 'Thanks for subscribing! You will now receive task notifications.',
+              icon: '/logo192.png',
+              data: {
+                type: 'welcome'
+              }
             }),
           });
-    
-          const contentType = response.headers.get('Content-Type');
-    
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            console.log('Server response:', data);
-          } else {
-            const responseText = await response.text();
-            console.error('Expected JSON, but got:', responseText);
-            throw new Error('Received non-JSON response from server');
+
+          if (!response.ok) {
+            throw new Error('Failed to send welcome notification');
           }
-          
+
+          console.log('✅ Welcome notification sent');
         } catch (error) {
-          console.error('Subscription error:', error);
+          console.error('❌ Notification error:', error);
         }
       }
     });
 
-    // Notification handlers for testing
-    window.OneSignal.on('notification.displayed', function (notification) {
-      console.log('🔔 Notification displayed:', notification);
+    // Initial subscription check
+    window.OneSignal.isPushNotificationsEnabled(function(isEnabled) {
+      console.log('🔔 Push notifications enabled:', isEnabled);
     });
-
-    window.OneSignal.on('notification.clicked', function (notification) {
-      console.log('🔔 Notification clicked:', notification);
-    });
-
-    window.OneSignal.on('notification.dismissed', function (notification) {
-      console.log('🔔 Notification dismissed:', notification);
-    });
-
-    // Initialize promise chain
-    window.OneSignal.getUserId()
-      .then(userId => {
-        console.log('🔔 OneSignal initialized. User ID:', userId);
-        return window.OneSignal.getNotificationPermission();
-      })
-      .then(permission => {
-        console.log('🔔 Initial permission status:', permission);
-      })
-      .catch(error => {
-        console.error('🔔 OneSignal initialization error:', error);
-      });
   });
 };
 
-// Send Task Notification
+// Task notification function
 export const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
-    console.error('OneSignal is not loaded');
+    console.error('❌ OneSignal not loaded');
     return;
   }
 
   try {
-    const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
-    const permission = await window.OneSignal.getNotificationPermission();
-    
-    console.log('Notification Status Check:', {
-      isSubscribed,
-      permission,
-      task: task.text,
-      scheduledTime: new Date(task.date).toISOString()
-    });
-
-    if (!isSubscribed) {
-      console.log('User is not subscribed to notifications');
+    const userId = await window.OneSignal.getUserId();
+    if (!userId) {
+      console.error('❌ No OneSignal User ID available');
       return;
     }
 
+    const isLocal = window.location.hostname === 'localhost';
+    const apiUrl = isLocal
+      ? 'http://localhost:3001/api'
+      : 'https://taskngo.vercel.app/api';
+
+    // Send initial task notification
+    const response = await fetch(`${apiUrl}/send-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        title: 'Task Scheduled ⏰',
+        message: `New task scheduled: "${task.text}"`,
+        data: {
+          taskId: task.id,
+          scheduledTime: task.date,
+          type: 'new_task'
+        },
+        icon: '/logo192.png',
+        url: window.location.origin
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send task notification');
+    }
+
+    // Schedule reminders
     const taskTime = new Date(task.date).getTime();
     const currentTime = Date.now();
 
-    const fiveMinBefore = new Date(taskTime - 5 * 60000);
-    const oneMinuteBefore = new Date(taskTime - 60000);
-    const dueTime = new Date(taskTime);
-
-    // Skip the 5-minute notification if the task is due in less than 5 minutes
-    if (fiveMinBefore <= currentTime) {
-      console.log("Skipping 5-minute notification: Task is too close.");
-    }
-
-    // Skip the 1-minute notification if the task is already due
-    if (oneMinuteBefore <= currentTime) {
-      console.log("Skipping 1-minute notification: Task is too close or past due.");
-    }
-
-    // Skip the due time notification if the task is already past due
-    if (dueTime <= currentTime) {
-      console.log("Skipping due time notification: Task is past due.");
-    }
-
-    // For localhost testing
-    if (window.location.hostname === 'localhost') {
-      if ('Notification' in window) {
-        // Simulate notifications only if they are valid
-        if (fiveMinBefore > currentTime) {
-          setTimeout(() => {
-            new Notification('5-minute Reminder', {
-              body: `⏰ Task "${task.text}" is coming up in 5 minutes!`,
-              icon: '/logo.png',
-            });
-          }, fiveMinBefore - currentTime);
-        }
-
-        if (oneMinuteBefore > currentTime) {
-          setTimeout(() => {
-            new Notification('1-minute Reminder', {
-              body: `⚠️ Task "${task.text}" is due in 1 minute!`,
-              icon: '/logo.png',
-            });
-          }, oneMinuteBefore - currentTime);
-        }
-
-        if (dueTime > currentTime) {
-          setTimeout(() => {
-            new Notification('Task Due', {
-              body: `🔔 Task "${task.text}" is now due!`,
-              icon: '/logo.png',
-            });
-          }, dueTime - currentTime);
-        }
-      } else {
-        console.error('Browser does not support notifications');
+    // Schedule reminders only if task is in the future
+    if (taskTime > currentTime) {
+      // 5 minutes before
+      if (taskTime - currentTime > 5 * 60 * 1000) {
+        setTimeout(() => sendReminder(userId, task, '5 minutes', apiUrl), 
+          taskTime - currentTime - 5 * 60 * 1000);
       }
-      return;
-    }
-    
-    // For production: Use OneSignal REST API for notifications
-    const sendNotificationViaRest = async (title, message, sendAt) => {
-      const response = await fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`,
-        },
-        body: JSON.stringify({
-          app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
-          headings: { en: title },
-          contents: { en: message },
-          url: window.location.origin,
-          chrome_web_icon: '/logo.png',
-          send_after: sendAt.toISOString(),
-          included_segments: ['Subscribed Users'], // Ensures all subscribed users receive the notification
-          data: {
-            taskId: task.id,
-            taskText: task.text,
-            scheduledTime: task.date,
-          },
-          web_buttons: [
-            {
-              id: 'view-task',
-              text: 'View Task',
-              url: window.location.origin,
-            },
-          ],
-        }),
-      });
-    
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to send notification: ${errorText}`);
+
+      // 1 minute before
+      if (taskTime - currentTime > 60 * 1000) {
+        setTimeout(() => sendReminder(userId, task, '1 minute', apiUrl), 
+          taskTime - currentTime - 60 * 1000);
       }
-    
-      const result = await response.json();
-      console.log('Notification scheduled successfully:', {
-        title,
-        scheduledTime: sendAt.toISOString(),
-        response: result,
-      });
-    
-      return result;
-    };
 
-    // Schedule notifications
-    const promises = [];
-    if (fiveMinBefore > currentTime) {
-      promises.push(
-        sendNotificationViaRest(
-          '5-minute Reminder',
-          `⏰ Task "${task.text}" is coming up in 5 minutes!`,
-          fiveMinBefore
-        )
-      );
+      // At task time
+      setTimeout(() => sendReminder(userId, task, 'now', apiUrl), 
+        taskTime - currentTime);
     }
 
-    if (oneMinuteBefore > currentTime) {
-      promises.push(
-        sendNotificationViaRest(
-          '1-minute Reminder',
-          `⚠️ Task "${task.text}" is due in 1 minute!`,
-          oneMinuteBefore
-        )
-      );
-    }
-
-    if (dueTime > currentTime) {
-      promises.push(
-        sendNotificationViaRest(
-          'Task Due',
-          `🔔 Task "${task.text}" is now due!`,
-          dueTime
-        )
-      );
-    }
-    
-    await Promise.all(promises);
-    console.log('All notifications scheduled successfully for task:', task.text);
-
+    console.log('✅ Task notifications scheduled');
   } catch (error) {
-    console.error('Error scheduling notifications:', error);
-    throw error;
+    console.error('❌ Error scheduling task notifications:', error);
+  }
+};
+
+const sendReminder = async (userId, task, timeframe, apiUrl) => {
+  try {
+    const message = timeframe === 'now'
+      ? `Task "${task.text}" is due now!`
+      : `Task "${task.text}" is due in ${timeframe}!`;
+
+    const response = await fetch(`${apiUrl}/send-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        title: `Task Reminder ${timeframe === 'now' ? '🔔' : '⏰'}`,
+        message,
+        data: {
+          taskId: task.id,
+          timeframe,
+          type: 'reminder'
+        },
+        icon: '/logo192.png',
+        url: window.location.origin
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send ${timeframe} reminder`);
+    }
+
+    console.log(`✅ ${timeframe} reminder sent`);
+  } catch (error) {
+    console.error(`❌ Error sending ${timeframe} reminder:`, error);
   }
 };

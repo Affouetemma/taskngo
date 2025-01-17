@@ -4,7 +4,7 @@ import { format, isToday, isFuture, startOfWeek, differenceInMilliseconds } from
 import { Analytics } from "@vercel/analytics/react";
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
 import './App.css';
-import { initializeOneSignal, sendTaskNotification } from './OneSignal.js';
+import { initializeOneSignal, sendTaskNotification } from './OneSignal.js'; // Ensure sendTaskNotification is imported here
 
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';

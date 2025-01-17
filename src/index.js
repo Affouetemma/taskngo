@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';  // Corrected import
+import ReactDOM from 'react-dom/client'; 
 import App from './App.js';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration.js';
 import reportWebVitals from './reportWebVitals.js';
@@ -17,7 +17,6 @@ root.render(
 const initializeOneSignal = () => {
   if (window.OneSignal) {
     console.log('Initializing OneSignal...');
-    // Add your OneSignal initialization code here
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
@@ -64,4 +63,38 @@ if (process.env.NODE_ENV === 'development') {
   }, 1000);
 
   setTimeout(() => clearInterval(checkOneSignalLoading), 10000); // Stop checking after 10 seconds
+}
+
+// Set up API URL based on the environment
+const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3001/api/send-notification' : 'https://taskngo.vercel.app/api/send-notification';
+
+// Ensure API calls are using the correct URL based on environment
+const sendNotification = async () => {
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        // Notification data here
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to send notification:', await response.text());
+    } else {
+      console.log('Notification sent successfully');
+    }
+  } catch (error) {
+    console.error('Error sending notification:', error);
+  }
+};
+
+// Example: Trigger sendNotification when a button is clicked
+const sendNotificationButton = document.getElementById('send-notification-button');
+if (sendNotificationButton) {
+  sendNotificationButton.addEventListener('click', () => {
+    sendNotification(); // Call sendNotification when button is clicked
+  });
 }
