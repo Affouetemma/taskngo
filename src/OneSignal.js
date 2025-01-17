@@ -4,24 +4,15 @@ export const initializeOneSignal = () => {
     console.error('OneSignal is not loaded');
     return;
   }
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/OneSignalSDKWorker.js', { scope: '/' })
-      .then(reg => console.log('Service Worker registered successfully:', reg))
-      .catch(err => console.error('Service Worker registration failed:', err));
-  } else {
-    console.error('Service Worker not supported in this browser');
-  }
-  
+
   window.OneSignal = window.OneSignal || [];
 
   window.OneSignal.push(function () {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: false, // Changed for production 
-      serviceWorkerPath: '/OneSignalSDKWorker.js',
-      serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
+      allowLocalhostAsSecureOrigin: false, 
       serviceWorkerParam: { scope: '/' },
-      path: '/',
+      path: window.location.origin,
       notifyButton: {
         enable: true,
         size: 'medium',
@@ -59,9 +50,9 @@ export const initializeOneSignal = () => {
       persistNotification: true,
       webhooks: {
         cors: true,
-        'notification.displayed': 'https://taskngo.vercel.app/api/notification-displayed',
-        'notification.clicked': 'https://taskngo.vercel.app/api/notification-clicked',
-        'notification.dismissed': 'https://taskngo.vercel.app/api/notification-dismissed'
+      'notification.displayed': `${window.location.origin}/api/notification-displayed`,
+    'notification.clicked': `${window.location.origin}/api/notification-clicked`,
+    'notification.dismissed': `${window.location.origin}/api/notification-dismissed`
       }
     });
 
@@ -88,20 +79,43 @@ export const initializeOneSignal = () => {
     debugOneSignalState();
 
     // Permission change handler
-    window.OneSignal.on('notificationPermissionChange', function(permissionChange) {
-      console.log('🔔 Permission state changed:', permissionChange.to);
-      debugOneSignalState(); // Check state after permission change
-    });
-
-    // Subscription change handler
-    window.OneSignal.on('subscriptionChange', function(isSubscribed) {
-      console.log('🔔 Subscription state changed:', isSubscribed);
+    window.OneSignal.on('subscriptionChange', async function(isSubscribed) {
       if (isSubscribed) {
-        window.OneSignal.getUserId().then(function(userId) {
-          console.log('🔔 New subscription - User ID:', userId);
-        });
+        const apiUrl = window.location.hostname === 'localhost'
+          ? 'http://localhost:3001/api/subscribe'
+          : 'https://taskngo.vercel.app/api/subscribe';
+    
+        try {
+          const userId = await window.OneSignal.getUserId();
+          const permission = await window.OneSignal.getNotificationPermission();
+          const subscription = await window.OneSignal.getSubscription();
+          
+          console.log('Attempting subscription with:', {
+            userId,
+            permission,
+            subscription,
+            apiUrl
+          });
+    
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              subscription,
+              userId,
+              notificationPermission: permission
+            }),
+          });
+    
+          const data = await response.json();
+          console.log('Server response:', data);
+          
+        } catch (error) {
+          console.error('Subscription error:', error);
+        }
       }
-      debugOneSignalState(); // Check state after subscription change
     });
 
     // Notification handlers for testing
@@ -296,6 +310,3 @@ export const sendTaskNotification = async (task) => {
     throw error;
   }
 };
-navigator.serviceWorker.register('https://taskngo.vercel.app/OneSignalSDKWorker.js', { scope: '/' })
-  .then(reg => console.log('Service Worker registered successfully:', reg))
-  .catch(err => console.error('Service Worker registration failed:', err));
