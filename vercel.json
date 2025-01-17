@@ -42,49 +42,12 @@
             "value": "/"
           }
         ]
-      },
-      {
-        "source": "/api/(.*)",
-        "headers": [
-          {
-            "key": "Access-Control-Allow-Credentials",
-            "value": "true"
-          },
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "https://taskngo.vercel.app"
-          },
-          {
-            "key": "Access-Control-Allow-Methods",
-            "value": "GET,POST,OPTIONS"
-          },
-          {
-            "key": "Access-Control-Allow-Headers",
-            "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-          }
-        ]
       }
     ],
     "rewrites": [
       {
         "source": "/api/:path*",
         "destination": "/api/:path*"
-      },
-      {
-        "source": "/OneSignalSDKWorker.js",
-        "destination": "/OneSignalSDKWorker.js"
-      },
-      {
-        "source": "/OneSignalSDKUpdaterWorker.js",
-        "destination": "/OneSignalSDKUpdaterWorker.js"
-      },
-      {
-        "source": "/((?!api/.*).*)",
-        "destination": "/index.html"
       }
-    ],
-    "env": {
-      "REACT_APP_ONESIGNAL_APP_ID": "@react_app_onesignal_app_id",
-      "REACT_APP_ONESIGNAL_REST_API_KEY": "@react_app_onesignal_rest_api_key"
-    }
+    ]
 }
