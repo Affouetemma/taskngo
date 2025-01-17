@@ -11,7 +11,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Setup CORS
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' })); // Restrict to production frontend
+app.use(cors({ origin: process.env.FRONTEND_URL || 'https://taskngo.vercel.app' })); // Restrict to production frontend
 
 app.use(express.json()); // For parsing JSON request bodies
 
