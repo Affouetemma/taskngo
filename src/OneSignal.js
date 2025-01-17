@@ -16,12 +16,10 @@ export const initializeOneSignal = () => {
   window.OneSignal.push(() => {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: isLocal,
+      allowLocalhostAsSecureOrigin: true,
       serviceWorkerParam: { 
-        scope: '/push/onesignal/' // Change scope to avoid conflicts
+        scope: '/' 
       },
-      serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js', // Specify explicit path
-      path: '/push/onesignal/', // Update path to match
       autoResubscribe: true,
       notifyButton: {
         enable: true,
