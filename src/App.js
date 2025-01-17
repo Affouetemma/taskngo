@@ -111,8 +111,8 @@ const handleScheduleClick = (taskId) => {
       setScheduleAlert({ show: false, taskId: null });
     }, 3000);
   };
-
   const addTask = async () => {
+    console.log('Adding task:', newTask.trim(), taskDate);
     if (newTask.trim() && taskDate) {
       const task = {
         id: Date.now(),
@@ -139,6 +139,7 @@ const handleScheduleClick = (taskId) => {
       alert("Please provide both a task and a date.");
     }
   };
+  
   
   const deleteTask = (id) => {
     setTasks(tasks.filter((task) => task.id !== id));
