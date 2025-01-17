@@ -8,83 +8,39 @@ import { initializeOneSignal, sendTaskNotification } from './OneSignal.js';
 
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
+
 const sendTaskReminder = (task, now, alertAudio, setTasks) => {
   const taskDate = new Date(task.date);
   const timeRemaining = taskDate.getTime() - now.getTime();
   const fiveMinutes = 5 * 60 * 1000;
   const oneMinute = 60 * 1000;
-
-  // 5-minute alert
+  
+  let updatedTask = null;
+  
   if (timeRemaining <= fiveMinutes && timeRemaining > fiveMinutes - 1000 && !task.fiveMinAlert) {
-    console.log('🚨 5-minute alert triggered for:', task.text);
+    updatedTask = { ...task, fiveMinAlert: true, isShaking: true };
     alertAudio.current.play().catch(e => console.error('Audio play error:', e));
-
-    // Push notification logic
-    if (window.OneSignal) {
-      window.OneSignal.isPushNotificationsEnabled()
-        .then(isSubscribed => {
-          if (isSubscribed) {
-            window.OneSignal.createNotification({
-              heading: { en: "Task Reminder" },
-              content: { en: `⏰ 5-minute reminder: "${task.text}" is coming up!` },
-              url: window.location.origin,
-              chrome_web_icon: "/logo.png",
-            });
-          }
-        })
-        .catch(error => console.error('Push notification error:', error));
-    }
-
-    setTasks(prevTasks =>
-      prevTasks.map(t => (t.id === task.id ? { ...t, fiveMinAlert: true, isShaking: true } : t))
-    );
+  } else if (timeRemaining <= oneMinute && timeRemaining > oneMinute - 1000 && !task.oneMinAlert) {
+    updatedTask = { ...task, oneMinAlert: true, isShaking: true };
+    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
+  } else if (timeRemaining <= 0 && timeRemaining > -1000 && !task.dueAlert) {
+    updatedTask = { ...task, dueAlert: true, isShaking: true };
+    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
   }
 
-  // 1-minute alert
-  if (timeRemaining <= oneMinute && timeRemaining > oneMinute - 1000 && !task.oneMinAlert) {
-    console.log('🚨 1-minute alert triggered for:', task.text);
-    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
-
-    if (window.OneSignal) {
-      window.OneSignal.isPushNotificationsEnabled()
-        .then(isSubscribed => {
-          if (isSubscribed) {
-            window.OneSignal.createNotification({
-              heading: { en: "Urgent Task Reminder" },
-              content: { en: `⚠️ 1-minute reminder: "${task.text}" is almost due!` },
-              url: window.location.origin,
-              chrome_web_icon: "/logo.png",
-            });
-          }
-        })
-        .catch(error => console.error('Push notification error:', error));
-    }
-
-    setTasks(prevTasks =>
-      prevTasks.map(t => (t.id === task.id ? { ...t, oneMinAlert: true, isShaking: true } : t))
-    );
+  if (updatedTask) {
+    setTasks(prevTasks => prevTasks.map(t => (t.id === task.id ? updatedTask : t)));
   }
 
-  // Task due alert
-  if (timeRemaining <= 0 && timeRemaining > -1000 && !task.dueAlert) {
-    console.log('🔔 Task is now due:', task.text);
-    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
-
-    setTasks(prevTasks =>
-      prevTasks.map(t => (t.id === task.id ? { ...t, dueAlert: true, isShaking: true } : t))
-    );
-  }
-
-  // Reset shaking for tasks after a delay
-  if (
-    (task.fiveMinAlert || task.oneMinAlert || task.dueAlert) &&
-    timeRemaining < -10000
-  ) {
+  // Reset shaking after a delay
+  if ((task.fiveMinAlert || task.oneMinAlert || task.dueAlert) && timeRemaining < -10000) {
     setTasks(prevTasks =>
       prevTasks.map(t => (t.id === task.id ? { ...t, isShaking: false } : t))
     );
   }
 };
+
+
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -95,36 +51,34 @@ function App() {
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
+  const [ratingLoading, setRatingLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      initializeOneSignal();
-      console.log('OneSignal initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize OneSignal:', error);
-    }
+    // Initialize OneSignal
+    const timer = setTimeout(() => {
+      try {
+        initializeOneSignal();
+        console.log('OneSignal initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize OneSignal:', error);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
   
   
   useEffect(() => {
-    // Preload audio
-    alertAudio.current = new Audio(ALERT_SOUND);
+    const onCanPlayThrough = () => console.log('Audio can play through');
+    const onError = (e) => console.error('Audio error:', e);
+    const onLoadedData = () => console.log('Audio file loaded successfully:', ALERT_SOUND);
+    const onSuspend = () => console.log('Audio loading suspended');
     
-    alertAudio.current.addEventListener('canplaythrough', () => {
-      console.log('Audio can play through');
-    });
-  
-    alertAudio.current.addEventListener('error', (e) => {
-      console.error('Audio error:', e);
-    });
-  
-    alertAudio.current.addEventListener('loadeddata', () => {
-      console.log('Audio file loaded successfully:', ALERT_SOUND);
-    });
-  
-    alertAudio.current.addEventListener('suspend', () => {
-      console.log('Audio loading suspended');
-    });
+    alertAudio.current = new Audio(ALERT_SOUND);
+    alertAudio.current.addEventListener('canplaythrough', onCanPlayThrough);
+    alertAudio.current.addEventListener('error', onError);
+    alertAudio.current.addEventListener('loadeddata', onLoadedData);
+    alertAudio.current.addEventListener('suspend', onSuspend);
   
     try {
       alertAudio.current.load();
@@ -134,14 +88,16 @@ function App() {
     }
   
     return () => {
-      if (alertAudio.current) {
-        alertAudio.current.removeEventListener('canplaythrough', () => {});
-        alertAudio.current.removeEventListener('error', () => {});
-        alertAudio.current.removeEventListener('loadeddata', () => {});
-        alertAudio.current.removeEventListener('suspend', () => {});
-      }
+      alertAudio.current.removeEventListener('canplaythrough', onCanPlayThrough);
+      alertAudio.current.removeEventListener('error', onError);
+      alertAudio.current.removeEventListener('loadeddata', onLoadedData);
+      alertAudio.current.removeEventListener('suspend', onSuspend);
+      alertAudio.current.pause();  // Pausing the audio on cleanup
+      alertAudio.current.currentTime = 0;  // Resetting the playback time
     };
   }, []);
+  
+  
 
   useEffect(() => {
     const handleTaskScheduled = (event) => {
@@ -154,7 +110,7 @@ function App() {
     return () => window.removeEventListener('taskScheduled', handleTaskScheduled);
   }, []);
 
-  const handleScheduleClick = (taskId) => {
+const handleScheduleClick = (taskId) => {
     setScheduleAlert({ show: true, taskId });
     setTimeout(() => {
       setScheduleAlert({ show: false, taskId: null });
@@ -173,14 +129,14 @@ function App() {
         fiveMinAlert: false,
         oneMinAlert: false,
       };
-  
+
       try {
         await sendTaskNotification(task);
         console.log('Notification scheduled for task:', task.text);
       } catch (error) {
         console.error('Error scheduling notification:', error);
       }
-      
+
       setTasks((prevTasks) => [...prevTasks, task]);
       setNewTask('');
       setTaskDate('');
@@ -209,21 +165,20 @@ function App() {
 
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
-      setTasks(prevTasks => {
-        return prevTasks.map((task) => {
-          if (task.id === completionPopup.taskId) {
-            if (response === 'yes') {
-              return { ...task, completed: true };
-            } else if (response === 'no') {
-              return { ...task, alertPlayed: true };
-            }
-          }
-          return task;
-        });
-      });
+      setTasks(prevTasks => prevTasks.map(task => {
+        if (task.id === completionPopup.taskId) {
+          return {
+            ...task,
+            completed: response === 'yes',
+            alertPlayed: response !== 'yes',
+          };
+        }
+        return task;
+      }));
     }
     setCompletionPopup({ show: false, taskId: null });
   };
+  
 
   const handleWidgetRating = async (ratingValue) => {
     let userId;
@@ -235,6 +190,8 @@ function App() {
       await updateAverageRating();
       console.log('Rating updated successfully:', ratingValue);
     } catch (error) {
+      console.error('Error updating rating:', error);
+      
       if (error.code === 'failed-precondition' || error.code === 'unavailable') {
         console.log('Connection issue detected, retrying...');
         setTimeout(async () => {
@@ -246,11 +203,10 @@ function App() {
             console.error('Failed to update rating after retry:', retryError);
           }
         }, 2000);
-      } else {
-        console.error('Error updating rating:', error);
       }
     }
   };
+  
 
   useEffect(() => {
     const now = new Date();
@@ -261,37 +217,45 @@ function App() {
     }, timeUntilReset);
     return () => clearTimeout(resetTimer);
   }, []);
-
+  
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
-  
+      
+      // Update task reminders in one batch
       setTasks(prevTasks => {
-        // Use sendTaskReminder for each task
-        prevTasks.forEach(task => {
-          sendTaskReminder(task, now, alertAudio, setTasks);  // Calling the helper function here
+        const updatedTasks = prevTasks.map(task => {
+          sendTaskReminder(task, now, alertAudio, setTasks); // Update reminders
+          return task;
         });
-  
-        return [...prevTasks];  // Return the updated list of tasks
+        return updatedTasks; // Return updated task list
       });
     }, 1000);
   
     return () => clearInterval(interval);  // Cleanup
-  }, [alertAudio, setTasks]);
+  }, [alertAudio]); // Dependency on alertAudio only
   
   
 
   useEffect(() => {
-    const fetchRating = async () => {
-      const avgRating = await fetchAverageRating();
-      setWidgetRating(avgRating);
-    };
+  const fetchRating = async () => {
+    setRatingLoading(true);
+    const avgRating = await fetchAverageRating();
+    setWidgetRating(avgRating);
+    setRatingLoading(false);
+  };
 
-    fetchRating();
-  }, []);
+  fetchRating();
+}, []);
+
 
   return (
     <>
+    {ratingLoading ? (
+      <p>Loading rating...</p>
+    ) : (
+      <p>Your Rating: {widgetRating} / 5</p>
+    )}
       <Analytics />
       <div className="App">
         {scheduleAlert.show && (
@@ -452,7 +416,7 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
       <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
       <div className="icons">
         {/* Clock icon for Today or Upcoming tasks */}
-        {task.showClockIcon && !task.archived && !task.completed && (
+        {isFuture(task.date) && !task.archived && !task.completed && (
           <FaClock className="icon clock-icon" />
         )}
         {isFuture(task.date) && !task.archived && !task.completed && (
@@ -461,7 +425,7 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
             onClick={() => onScheduleClick(task.id)}
           />
         )}
-        {!task.archived && (
+        {!task.archived && !task.completed && (
           <FaArchive onClick={() => archiveTask(task.id)} className="icon" />
         )}
         {!task.completed && (
@@ -472,5 +436,6 @@ const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick
     </div>
   );
 };
+
 
 export default App;
