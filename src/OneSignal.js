@@ -242,33 +242,37 @@ export const sendTaskNotification = async (task) => {
           url: window.location.origin,
           chrome_web_icon: '/logo.png',
           send_after: sendAt.toISOString(),
-          data: { 
+          included_segments: ['Subscribed Users'], // Ensures all subscribed users receive the notification
+          data: {
             taskId: task.id,
             taskText: task.text,
-            scheduledTime: task.date 
+            scheduledTime: task.date,
           },
-          web_buttons: [{
-            id: "view-task",
-            text: "View Task",
-            url: window.location.origin
-          }]
+          web_buttons: [
+            {
+              id: 'view-task',
+              text: 'View Task',
+              url: window.location.origin,
+            },
+          ],
         }),
       });
-
+    
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to send notification: ${errorText}`);
       }
-
+    
       const result = await response.json();
       console.log('Notification scheduled successfully:', {
         title,
         scheduledTime: sendAt.toISOString(),
-        response: result
+        response: result,
       });
-
+    
       return result;
     };
+    
 
     // Schedule notifications
     const promises = [];
