@@ -53,7 +53,7 @@ Taskngo is a standalone Progressive Web App (PWA) for task management built with
 
 ## License
 
-TaskngO is open-source software licensed under the [MIT License](./LICENSE).
+Taskngo is open-source software licensed under the [MIT License](./LICENSE).
 
 ## Author
 Affouet Emmanuella Ouattara
