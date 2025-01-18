@@ -1,5 +1,11 @@
-// Initialize OneSignal
-export const initializeOneSignal = () => {
+let isOneSignalInitialized = false;
+
+const initializeOneSignal = () => {
+  if (isOneSignalInitialized) {
+    console.log('OneSignal is already initialized.');
+    return; // Prevent re-initialization
+  }
+
   if (!window.OneSignal) {
     console.error('❌ OneSignal is not loaded.');
     return;
@@ -12,14 +18,14 @@ export const initializeOneSignal = () => {
     ? 'http://localhost:3001/api'
     : 'https://taskngo.vercel.app/api';
 
-  // Push initialization to OneSignal
   window.OneSignal.push(() => {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: true,
-      serviceWorkerParam: { 
-        scope: '/' 
+      allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
+      serviceWorkerParam: {
+        scope: '/',
       },
+      serviceWorkerPath: '/OneSignalSDKWorker.js',
       autoResubscribe: true,
       notifyButton: {
         enable: true,
@@ -52,9 +58,9 @@ export const initializeOneSignal = () => {
       },
       welcomeNotification: {
         disable: false,
-        title: "Welcome to Taskngo! 🎉",
-        message: "Thanks for subscribing to notifications!",
-        url: window.location.origin
+        title: 'Welcome to Taskngo! 🎉',
+        message: 'Thanks for subscribing to notifications!',
+        url: window.location.origin,
       },
       persistNotification: true,
       webhooks: {
@@ -65,54 +71,11 @@ export const initializeOneSignal = () => {
       },
     });
 
-    // Handle subscription changes
-    window.OneSignal.on('subscriptionChange', async (isSubscribed) => {
-      console.log(`🔔 Subscription changed:`, isSubscribed);
-      
-      if (isSubscribed) {
-        try {
-          const userId = await window.OneSignal.getUserId();
-          
-          // Log the subscription
-          console.log('🔔 User subscribed:', userId);
-
-          // Send welcome notification
-          const response = await fetch(`${apiUrl}/send-notification`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              userId,
-              title: 'Welcome to Taskngo! 🎉',
-              message: 'Thanks for subscribing! You will now receive task notifications.',
-              icon: '/logo192.png',
-              data: {
-                type: 'welcome'
-              }
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to send welcome notification');
-          }
-
-          console.log('✅ Welcome notification sent');
-        } catch (error) {
-          console.error('❌ Notification error:', error);
-        }
-      }
-    });
-
-    // Initial subscription check
-    window.OneSignal.isPushNotificationsEnabled(function(isEnabled) {
-      console.log('🔔 Push notifications enabled:', isEnabled);
-    });
+    isOneSignalInitialized = true; // Set the flag to true after initialization
   });
 };
 
-// Task notification function
-export const sendTaskNotification = async (task) => {
+const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
     console.error('❌ OneSignal not loaded');
     return;
@@ -130,7 +93,6 @@ export const sendTaskNotification = async (task) => {
       ? 'http://localhost:3001/api'
       : 'https://taskngo.vercel.app/api';
 
-    // Send initial task notification
     const response = await fetch(`${apiUrl}/send-notification`, {
       method: 'POST',
       headers: {
@@ -143,10 +105,10 @@ export const sendTaskNotification = async (task) => {
         data: {
           taskId: task.id,
           scheduledTime: task.date,
-          type: 'new_task'
+          type: 'new_task',
         },
         icon: '/logo192.png',
-        url: window.location.origin
+        url: window.location.origin,
       }),
     });
 
@@ -154,25 +116,20 @@ export const sendTaskNotification = async (task) => {
       throw new Error('Failed to send task notification');
     }
 
-    // Schedule reminders
     const taskTime = new Date(task.date).getTime();
     const currentTime = Date.now();
 
-    // Schedule reminders only if task is in the future
     if (taskTime > currentTime) {
-      // 5 minutes before
       if (taskTime - currentTime > 5 * 60 * 1000) {
         setTimeout(() => sendReminder(userId, task, '5 minutes', apiUrl), 
           taskTime - currentTime - 5 * 60 * 1000);
       }
 
-      // 1 minute before
       if (taskTime - currentTime > 60 * 1000) {
         setTimeout(() => sendReminder(userId, task, '1 minute', apiUrl), 
           taskTime - currentTime - 60 * 1000);
       }
 
-      // At task time
       setTimeout(() => sendReminder(userId, task, 'now', apiUrl), 
         taskTime - currentTime);
     }
@@ -201,10 +158,10 @@ const sendReminder = async (userId, task, timeframe, apiUrl) => {
         data: {
           taskId: task.id,
           timeframe,
-          type: 'reminder'
+          type: 'reminder',
         },
         icon: '/logo192.png',
-        url: window.location.origin
+        url: window.location.origin,
       }),
     });
 
@@ -217,3 +174,23 @@ const sendReminder = async (userId, task, timeframe, apiUrl) => {
     console.error(`❌ Error sending ${timeframe} reminder:`, error);
   }
 };
+
+const subscribeToNotification = async () => {
+  try {
+    if (!window.OneSignal) {
+      console.error('❌ OneSignal is not initialized');
+      return;
+    }
+
+    const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
+    if (!isSubscribed) {
+      window.OneSignal.showNativePrompt();
+    } else {
+      console.log('User is already subscribed to notifications');
+    }
+  } catch (error) {
+    console.error('❌ Error subscribing to notifications:', error);
+  }
+};
+
+export { initializeOneSignal, sendTaskNotification, subscribeToNotification };

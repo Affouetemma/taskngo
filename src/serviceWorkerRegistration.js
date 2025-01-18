@@ -65,9 +65,9 @@ function registerValidSW(swUrl, config) {
         window.OneSignal.push(() => {
           window.OneSignal.init({
             ...config,
-            serviceWorkerPath: '/OneSignalSDKWorker.js',
+            serviceWorkerPath: '/OneSignalSDKWorker.js', // Path for OneSignal's service worker
             serviceWorkerParam: {
-              scope: '/push/onesignal/'
+              scope: '/push/onesignal/' // Ensure the service worker has the correct scope
             }
           });
         });

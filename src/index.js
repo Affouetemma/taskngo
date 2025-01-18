@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client'; 
+import ReactDOM from 'react-dom/client';
 import App from './App.js';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration.js';
 import reportWebVitals from './reportWebVitals.js';
@@ -13,16 +13,20 @@ root.render(
   </React.StrictMode>
 );
 
-// Function to initialize OneSignal
+// Function to initialize OneSignal only once
 const initializeOneSignal = () => {
-  if (window.OneSignal) {
+  if (window.OneSignal && !window.OneSignal.initialized) {
     console.log('Initializing OneSignal...');
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
+      notifyButton: {
+        enable: true, // Enable the notification button in the UI (optional)
+      },
     });
+    window.OneSignal.initialized = true; // Mark as initialized to avoid re-initialization
   } else {
-    console.error('OneSignal is not available on the window object.');
+    console.error('OneSignal is either not available or already initialized.');
   }
 };
 
@@ -31,16 +35,15 @@ const setupServiceWorkerAndNotifications = () => {
   serviceWorkerRegistration.register({
     onSuccess: () => {
       console.log('Service Worker registered successfully');
-      initializeOneSignal();
+      initializeOneSignal(); // Initialize OneSignal only once after service worker registration
     },
     onUpdate: () => {
       console.log('Service Worker updated');
-      initializeOneSignal();
+      initializeOneSignal(); // Initialize OneSignal again only if needed
     },
     onError: (error) => {
       console.error('Service Worker registration failed:', error);
-      // Attempt to initialize OneSignal even if service worker registration fails
-      initializeOneSignal();
+      initializeOneSignal(); // Attempt to initialize OneSignal even if service worker registration fails
     },
   });
 };
@@ -56,9 +59,10 @@ reportWebVitals(console.log);
 // Debugging OneSignal loading in development
 if (process.env.NODE_ENV === 'development') {
   const checkOneSignalLoading = setInterval(() => {
-    if (window.OneSignal) {
+    if (window.OneSignal && !window.OneSignal.initialized) {
       console.log('OneSignal loaded successfully');
       clearInterval(checkOneSignalLoading);
+      initializeOneSignal(); // Ensure OneSignal gets initialized only once
     }
   }, 1000);
 

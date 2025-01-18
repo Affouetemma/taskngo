@@ -4,8 +4,8 @@ import { format, isToday, isFuture, startOfWeek, differenceInMilliseconds } from
 import { Analytics } from "@vercel/analytics/react";
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
 import './App.css';
-import { initializeOneSignal, sendTaskNotification } from './OneSignal.js'; // Ensure sendTaskNotification is imported here
-
+// eslint-disable-next-line no-unused-vars
+import { initializeOneSignal, sendTaskNotification, subscribeToNotification } from './OneSignal.js';
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
 
@@ -40,8 +40,6 @@ const sendTaskReminder = (task, now, alertAudio, setTasks) => {
   }
 };
 
-
-
 function App() {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
@@ -51,21 +49,14 @@ function App() {
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
-  
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        initializeOneSignal();
-        console.log('OneSignal initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize OneSignal:', error);
-      }
-    }, 1000);
+    // Call OneSignal initialization only once when the component mounts
+    initializeOneSignal();
+  }, []);  // Empty dependency array ensures this runs once on mount
+
   
-    return () => clearTimeout(timer); // Cleanup the timer when the component unmounts
-  }, []);
-  
-  
+
   useEffect(() => {
     const onCanPlayThrough = () => console.log('Audio can play through');
     const onError = (e) => console.error('Audio error:', e);
@@ -93,6 +84,12 @@ function App() {
     };
   }, []);
   
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Running in production mode!');
+  } else {
+    console.log('Running in development mode!');
+  }
+  
 
   useEffect(() => {
     const handleTaskScheduled = (event) => {
@@ -111,35 +108,36 @@ const handleScheduleClick = (taskId) => {
       setScheduleAlert({ show: false, taskId: null });
     }, 3000);
   };
-  const addTask = async () => {
-    console.log('Adding task:', newTask.trim(), taskDate);
-    if (newTask.trim() && taskDate) {
-      const task = {
-        id: Date.now(),
-        text: newTask.trim(),
-        date: new Date(taskDate),
-        archived: false,
-        completed: false,
-        isShaking: false,
-        fiveMinAlert: false,
-        oneMinAlert: false,
-      };
-  
-      try {
-        await sendTaskNotification(task); // Send the task notification
-        console.log('Notification scheduled for task:', task.text);
-      } catch (error) {
-        console.error('Error scheduling notification:', error);
-      }
-  
-      setTasks((prevTasks) => [...prevTasks, task]);
-      setNewTask('');
-      setTaskDate('');
-    } else {
-      alert("Please provide both a task and a date.");
+
+const addTask = async () => {
+  console.log('Adding task:', newTask.trim(), taskDate);
+  if (newTask.trim() && taskDate) {
+    const task = {
+      id: Date.now(),
+      text: newTask.trim(),
+      date: new Date(taskDate),
+      archived: false,
+      completed: false,
+      isShaking: false,
+      fiveMinAlert: false,
+      oneMinAlert: false,
+    };
+
+    try {
+      await sendTaskNotification(task); // Send the task notification
+      console.log('Notification scheduled for task:', task.text);
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
     }
-  };
-  
+
+    setTasks((prevTasks) => [...prevTasks, task]);
+    setNewTask('');
+    setTaskDate('');
+  } else {
+    alert("Please provide both a task and a date.");
+  }
+};
+
   
   const deleteTask = (id) => {
     setTasks(tasks.filter((task) => task.id !== id));
