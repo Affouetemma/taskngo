@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
 import { format, isToday, isFuture, startOfWeek, differenceInMilliseconds } from 'date-fns';
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
 import './App.css';
 // eslint-disable-next-line no-unused-vars
@@ -56,7 +57,7 @@ function App() {
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
 
-  
+ 
 
   useEffect(() => {
     return () => {
@@ -265,7 +266,10 @@ const handleScheduleClick = (taskId) => {
             </div>
           </div>
         )}
-
+<div>
+        {/* ... */}
+        <SpeedInsights />
+      </div>
         {alertVisible && (
           <div className="alert">
             <p>Tasks have been reset for the week!</p>
