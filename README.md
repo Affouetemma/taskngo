@@ -1,88 +1,59 @@
-# TaskNGo
+# Taskngo
 
-TaskNGo is a lightweight and intuitive task management widget built with React. It helps you organize your tasks with real-time alerts and smart scheduling features, categorizing them into Today's Tasks, Upcoming Tasks, Completed Tasks, and Archived Tasks.
+Taskngo is a standalone Progressive Web App (PWA) for task management built with React. It helps you organize your tasks with real-time notifications and smart scheduling features, categorizing them into Today's Tasks, Upcoming Tasks, Completed Tasks, and Archived Tasks. Install it on any device and stay organized across all platforms!
 
 ## Features
 
 - **Smart Categorization**: Automatically sorts tasks into Today, Upcoming, Completed, and Archived
-- **Real-time Alerts**:
-   - Visual and audio notifications one minute before task due time,
-   - Clock icon appears as visual reminder,
-   - Task shaking animation for urgent tasks
+- **Push notifications**:
+   - Real-time notifications powered by OneSignal,
+   - 5-minute and 1-minute advance reminders,
+   - Instant notifications when tasks are due
+   - Task status updates and reminders
 - **Task Scheduling**:
    - Customizable date and time for each task,
    - Automatic scheduling alerts,
    - Weekly task reset (every Sunday midnight).
-- **Interactive Controls**:
-   - Customizable date and time for each task,
-   - Automatic scheduling alerts,
-   - Weekly task reset (every Sunday midnight).
- - **Modern Design**: Modern Design: Clean, responsive UI optimized for productivity.
+- **Cross-Platform Installation**:
+   - Install on smartphones (Android/iOS),
+   - Add to desktop (Windows/Mac/Linux),
+ - **Modern Design**: Clean, responsive UI optimized for productivity.
    
 ## Installation
+## As a PWA (Recommended)
 
-Follow these steps to set up and run TaskNGO locally:
+1. Visit https://taskngo.vercel.app
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/your-username/taskngo.git
-   ```
+2. Click "Install" or "Add to Home Screen" when prompted or use browser menu
 
-2. Navigate to the project directory:
-   ```bash
-   cd taskngo
-   ```
+3. Follow installation instructions for your device
 
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-4. Start the development server:
-   ```bash
-   npm start
-   ```
-
-5. Open [http://localhost:3000](http://localhost:3000) to view the app in your browser.
+4. Launch Taskngo from your home screen/app drawer
 
 ## Required Dependencies
 
    - React
    - React icons
    - date-fns
+   - OneSignal
+   - Vercel Analytics
 
 ## Usage
 
-1. Add a task by entering its name and selecting a due date/time.
-2. Monitor tasks in their respective categories
-3. Receive alerts one minute before task time.
-4. Respond to completion prompts.
-5. Archive or delete tasks as needed.
-6. View upcoming tasks with scheduling indicators.
-7. Track completed tasks in dedicated section
+1. Install Taskngo on your preferred device
+2. Enable notifications when prompted
+3. Add a task by entering its name and selecting a due date/time
+4. Monitor tasks in their respective categories
+5. Receive notifications before and at task time
+6. Respond to completion prompts
+7. Archive or delete tasks as needed
+8. View upcoming tasks with scheduling indicators
+9. Track completed tasks in dedicated section
 
-## Contributing
-
-Contributions are welcome! If you have suggestions for features or improvements:
-
-1. Fork the repository.
-2. Create a new branch:
-   ```bash
-   git checkout -b feature-name
-   ```
-3. Make your changes and commit them:
-   ```bash
-   git commit -m "Add your feature description here"
-   ```
-4. Push to your branch:
-   ```bash
-   git push origin feature-name
-   ```
-5. Open a pull request.
 
 ## License
 
-TaskNGO is open-source software licensed under the [MIT License](./LICENSE).
+TaskngO is open-source software licensed under the [MIT License](./LICENSE).
 
 ## Author
 Affouet Emmanuella Ouattara
