@@ -6,6 +6,11 @@ import { addUserRating, updateAverageRating, fetchAverageRating } from './fireba
 import './App.css';
 // eslint-disable-next-line no-unused-vars
 import { initializeOneSignal, sendTaskNotification, subscribeToNotification } from './OneSignal.js';
+import { cleanupOneSignal } from './OneSignal.js';
+import { unregisterAll } from './serviceWorkerRegistration.js';
+
+// When you need to clean up all service workers
+await unregisterAll();
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
 
@@ -50,12 +55,13 @@ function App() {
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
 
-  useEffect(() => {
-    // Call OneSignal initialization only once when the component mounts
-    initializeOneSignal();
-  }, []);  // Empty dependency array ensures this runs once on mount
 
-  
+
+  useEffect(() => {
+    return () => {
+      cleanupOneSignal();
+    };
+  }, []);
 
   useEffect(() => {
     const onCanPlayThrough = () => console.log('Audio can play through');
@@ -109,34 +115,40 @@ const handleScheduleClick = (taskId) => {
     }, 3000);
   };
 
-const addTask = async () => {
-  console.log('Adding task:', newTask.trim(), taskDate);
-  if (newTask.trim() && taskDate) {
-    const task = {
-      id: Date.now(),
-      text: newTask.trim(),
-      date: new Date(taskDate),
-      archived: false,
-      completed: false,
-      isShaking: false,
-      fiveMinAlert: false,
-      oneMinAlert: false,
-    };
-
-    try {
-      await sendTaskNotification(task); // Send the task notification
-      console.log('Notification scheduled for task:', task.text);
-    } catch (error) {
-      console.error('Error scheduling notification:', error);
+  const addTask = async () => {
+    console.log('Adding task:', newTask.trim(), taskDate);
+    if (newTask.trim() && taskDate) {
+      const task = {
+        id: Date.now(),
+        text: newTask.trim(),
+        date: new Date(taskDate),
+        archived: false,
+        completed: false,
+        isShaking: false,
+        fiveMinAlert: false,
+        oneMinAlert: false,
+      };
+  
+      try {
+        await sendTaskNotification(task);
+        console.log('Notification scheduled for task:', task.text);
+        // Only add the task to state if notification scheduling succeeds
+        setTasks((prevTasks) => [...prevTasks, task]);
+        setNewTask('');
+        setTaskDate('');
+      } catch (error) {
+        console.error('❌ Error scheduling task notifications:', error);
+        // Show user-friendly error message
+        alert("Failed to schedule notification. The task will be added without notifications.");
+        // Still add the task even if notification fails
+        setTasks((prevTasks) => [...prevTasks, task]);
+        setNewTask('');
+        setTaskDate('');
+      }
+    } else {
+      alert("Please provide both a task and a date.");
     }
-
-    setTasks((prevTasks) => [...prevTasks, task]);
-    setNewTask('');
-    setTaskDate('');
-  } else {
-    alert("Please provide both a task and a date.");
-  }
-};
+  };
 
   
   const deleteTask = (id) => {

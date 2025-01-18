@@ -35,6 +35,38 @@ app.use((req, res, next) => {
   next();
 });
 
+// Clear notifications endpoint
+app.post('/api/clear-notifications', async (req, res) => {
+  const { userId } = req.body;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'userId is required' });
+  }
+
+  try {
+    const response = await fetch('https://onesignal.com/api/v1/notifications/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`
+      },
+      body: JSON.stringify({
+        app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
+        player_id: userId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to clear notifications');
+    }
+
+    res.status(200).json({ message: 'Notifications cleared' });
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
+    res.status(500).json({ error: 'Failed to clear notifications' });
+  }
+});
+
 // Single notification endpoint
 app.post('/api/send-notification', async (req, res) => {
   const { title, message, userId, data = {}, icon = "/logo192.png" } = req.body;
@@ -51,7 +83,7 @@ app.post('/api/send-notification', async (req, res) => {
       ? 'http://localhost:3000' 
       : 'https://taskngo.vercel.app';
 
-    // Construct notification payload
+    // Construct notification payload with updated settings
     const notificationPayload = {
       app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
       include_player_ids: [userId],
@@ -59,7 +91,7 @@ app.post('/api/send-notification', async (req, res) => {
       headings: { en: title },
       web_push_type: 'Notification',
       priority: 10,
-      ttl: 30,
+      ttl: 5, // Reduced TTL
       isAnyWeb: true,
       // Icons with absolute URLs
       chrome_web_icon: `${baseUrl}${icon}`,
@@ -90,7 +122,7 @@ app.post('/api/send-notification', async (req, res) => {
       url: baseUrl,
       chrome_web_origin: baseUrl,
       chrome_web_default_notification_icon: `${baseUrl}/logo192.png`,
-      // Appearance settings
+      // Updated appearance settings
       chrome_web_style: {
         type: 'notification',
         title: title,
@@ -98,8 +130,8 @@ app.post('/api/send-notification', async (req, res) => {
         icon: `${baseUrl}/logo192.png`,
         badge: `${baseUrl}/logo192.png`,
         image: `${baseUrl}/logo512.png`,
-        requireInteraction: true,
-        silent: false
+        requireInteraction: false, // Changed to false
+        silent: true // Changed to true for background notifications
       }
     };
 
@@ -125,6 +157,23 @@ app.post('/api/send-notification', async (req, res) => {
         error: 'Failed to send notification',
         details: responseData.errors?.[0] || 'Unknown error occurred'
       });
+    }
+
+    // Clear any existing notifications before sending new ones
+    try {
+      await fetch('https://onesignal.com/api/v1/notifications/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`
+        },
+        body: JSON.stringify({
+          app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
+          player_id: userId
+        })
+      });
+    } catch (error) {
+      console.warn('Failed to clear existing notifications:', error);
     }
 
     // Log success and respond
@@ -166,6 +215,11 @@ app.post('/api/notification-clicked', (req, res) => {
 app.post('/api/notification-dismissed', (req, res) => {
   console.log('Notification dismissed:', req.body);
   res.status(200).send();
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // Start server

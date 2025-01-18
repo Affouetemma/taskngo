@@ -4,6 +4,9 @@ const isLocalhost = Boolean(
   window.location.hostname.match(/^127(?:\.[0-9]+){0,2}\.[0-9]+$/)
 );
 
+// Store service worker registration globally
+let swRegistration = null;
+
 export function register(config) {
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href);
@@ -12,101 +15,44 @@ export function register(config) {
     }
 
     window.addEventListener('load', () => {
-      const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
-      
-      if (isLocalhost) {
-        checkValidServiceWorker(swUrl, config);
-        navigator.serviceWorker.ready.then(() => {
-          console.log('Web app is being served cache-first by a service worker.');
-        });
-      } else {
-        registerValidSW(swUrl, config);
-      }
+      // First, unregister any existing service workers
+      unregisterAll().then(() => {
+        // Do not register a new service worker - let OneSignal handle it
+        if (isLocalhost) {
+          navigator.serviceWorker.ready.then(() => {
+            console.log('OneSignal service worker is ready');
+          });
+        }
+      });
     });
   }
 }
 
-function checkValidServiceWorker(swUrl, config) {
-  // Check if the service worker can be found.
-  fetch(swUrl, {
-    headers: { 'Service-Worker': 'script' }
-  })
-    .then(response => {
-      // Ensure service worker exists, and that we really are getting a JS file.
-      const contentType = response.headers.get('content-type');
-      if (
-        response.status === 404 ||
-        (contentType != null && contentType.indexOf('javascript') === -1)
-      ) {
-        // No service worker found. Probably a different app. Reload the page.
-        navigator.serviceWorker.ready.then(registration => {
-          registration.unregister().then(() => {
-            window.location.reload();
-          });
-        });
-      } else {
-        // Service worker found. Proceed as normal.
-        registerValidSW(swUrl, config);
-      }
-    })
-    .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.');
-    });
-}
-
-function registerValidSW(swUrl, config) {
-  navigator.serviceWorker
-    .register(swUrl, { scope: '/' })
-    .then((registration) => {
-      console.log('Main Service Worker registered:', registration);
-
-      // Register OneSignal after main service worker is registered
-      if (window.OneSignal) {
-        window.OneSignal.push(() => {
-          window.OneSignal.init({
-            ...config,
-            serviceWorkerPath: '/OneSignalSDKWorker.js', // Path for OneSignal's service worker
-            serviceWorkerParam: {
-              scope: '/push/onesignal/' // Ensure the service worker has the correct scope
-            }
-          });
-        });
-      }
-
-      registration.onupdatefound = () => {
-        const installingWorker = registration.installing;
-        if (installingWorker) {
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed') {
-              if (navigator.serviceWorker.controller) {
-                console.log('New content is available; please refresh.');
-                if (config && config.onUpdate) {
-                  config.onUpdate(registration);
-                }
-              } else {
-                console.log('Content is cached for offline use.');
-                if (config && config.onSuccess) {
-                  config.onSuccess(registration);
-                }
-              }
-            }
-          };
-        }
-      };
-    })
-    .catch((error) => {
-      console.error('Error during service worker registration:', error);
-    });
-}
-
-export function unregister() {
+// Function to unregister all service workers
+export async function unregisterAll() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then(registration => {
-        registration.unregister();
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        registrations.map(registration => registration.unregister())
+      );
+      console.log('All service workers unregistered');
+    } catch (error) {
+      console.error('Error unregistering service workers:', error);
+    }
+  }
+}
+
+// Function to unregister specific service worker
+export function unregister() {
+  if (swRegistration) {
+    swRegistration.unregister()
+      .then(() => {
+        console.log('Service worker unregistered');
+        swRegistration = null;
       })
       .catch(error => {
-        console.error(error.message);
+        console.error('Error unregistering service worker:', error);
       });
   }
 }
