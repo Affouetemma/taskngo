@@ -21,11 +21,7 @@ export const initializeOneSignal = () => {
     });
   });
 
-  const isLocal = window.location.hostname === 'localhost';
-  const apiUrl = isLocal
-    ? 'http://localhost:3001/api'
-    : 'https://taskngo.vercel.app/api';
-
+  const apiUrl = '/api'; // This will work for both local and production
 
   // Push initialization to OneSignal
   window.OneSignal.push(() => {

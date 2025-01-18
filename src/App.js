@@ -9,6 +9,7 @@ import { initializeOneSignal, sendTaskNotification, subscribeToNotification } fr
 import { cleanupOneSignal } from './OneSignal.js';
 import { unregisterAll } from './serviceWorkerRegistration.js';
 
+
 // When you need to clean up all service workers
 await unregisterAll();
 // Constants
@@ -55,7 +56,7 @@ function App() {
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
 
-
+  
 
   useEffect(() => {
     return () => {
