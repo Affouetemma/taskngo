@@ -138,7 +138,7 @@ const handleScheduleClick = (taskId) => {
         setNewTask('');
         setTaskDate('');
       } catch (error) {
-        console.error('❌ Error scheduling task notifications:', error);
+    
         // Show user-friendly error message
         alert("Failed to schedule notification. The task will be added without notifications.");
         // Still add the task even if notification fails

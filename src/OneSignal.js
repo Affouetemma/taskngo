@@ -1,37 +1,19 @@
-// Store timeouts globally so they can be cleaned up
 let taskTimeouts = [];
 
-// Initialize OneSignal
 export const initializeOneSignal = () => {
-  // Check if OneSignal is already initialized or if window.OneSignal exists
   if (window.OneSignal && window.OneSignalInitialized) {
     console.warn('🔔 OneSignal is already initialized.');
     return;
   }
 
-  // Use the recommended initialization pattern
   if (!window.OneSignal) {
     window.OneSignal = [];
   }
 
   window.OneSignal.push(() => {
-    window.OneSignal.on('ready', () => {
-      console.log('✅ OneSignal is ready.');
-      window.OneSignal.showNotifyButton();
-    });
-  });
-
-  const apiUrl = '/api'; // This will work for both local and production
-
-  // Push initialization to OneSignal
-  window.OneSignal.push(() => {
     window.OneSignal.init({
       appId: process.env.REACT_APP_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: true,
-      serviceWorkerParam: {
-        scope: '/push/onesignal/', // Ensure this matches your folder structure
-      },
-      autoResubscribe: false,
       notifyButton: {
         enable: true,
         size: 'medium',
@@ -47,7 +29,6 @@ export const initializeOneSignal = () => {
           'message.action.resubscribed': 'You are now subscribed to notifications',
           'message.action.unsubscribed': 'You will no longer receive notifications',
         },
-        prenotify: true,
         colors: {
           'circle.background': '#2196f3',
           'circle.foreground': 'white',
@@ -62,95 +43,61 @@ export const initializeOneSignal = () => {
         },
       },
       welcomeNotification: {
-        disable: true,
+        disable: false,
         title: "Welcome to Taskngo! 🎉",
         message: "Thanks for subscribing to notifications!",
-        url: window.location.origin
-      },
-      persistNotification: false,
-      webhooks: {
-        cors: true,
-        'notification.displayed': `${apiUrl}/notification-displayed`,
-        'notification.clicked': `${apiUrl}/notification-clicked`,
-        'notification.dismissed': `${apiUrl}/notification-dismissed`,
-      },
-    });
-
-    // Handle subscription changes
-    window.OneSignal.on('subscriptionChange', async (isSubscribed) => {
-      console.log(`🔔 Subscription changed:`, isSubscribed);
-
-      if (isSubscribed) {
-        try {
-          const userId = await window.OneSignal.getUserId();
-          console.log('🔔 User subscribed:', userId);
-
-          // Send welcome notification
-          const response = await fetch(`${apiUrl}/send-notification`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              userId,
-              title: 'Welcome to Taskngo! 🎉',
-              message: 'Thanks for subscribing! You will now receive task notifications.',
-              icon: '/logo192.png',
-              data: {
-                type: 'welcome'
-              }
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to send welcome notification');
-          }
-
-          console.log('✅ Welcome notification sent');
-        } catch (error) {
-          console.error('❌ Notification error:', error);
-        }
-      } else {
-        // Clear timeouts when unsubscribed
-        cleanupTimeouts();
       }
     });
 
-    // Initial subscription check
-    window.OneSignal.isPushNotificationsEnabled(function (isEnabled) {
-      console.log('🔔 Push notifications enabled:', isEnabled);
+    window.OneSignal.on('subscriptionChange', async (isSubscribed) => {
+      console.log(`🔔 Subscription changed:`, isSubscribed);
+      if (isSubscribed) {
+        try {
+          const userId = await window.OneSignal.getUserId();
+          await sendOneSignalNotification(
+            userId,
+            'Welcome to Taskngo! 🎉',
+            'Thanks for subscribing! You will now receive task notifications.'
+          );
+        } catch (error) {
+          console.error('❌ Welcome notification error:', error);
+        }
+      }
     });
   });
 
-  window.OneSignalInitialized = true; // Mark OneSignal as initialized
+  window.OneSignalInitialized = true;
 };
 
-// Cleanup function for timeouts
-const cleanupTimeouts = () => {
-  taskTimeouts.forEach(timeout => clearTimeout(timeout));
-  taskTimeouts = [];
-};
+const sendOneSignalNotification = async (userId, title, message, data = {}) => {
+  const response = await fetch('https://onesignal.com/api/v1/notifications', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_REST_API_KEY}`
+    },
+    body: JSON.stringify({
+      app_id: process.env.REACT_APP_ONESIGNAL_APP_ID,
+      include_player_ids: [userId],
+      contents: { en: message },
+      headings: { en: title },
+      data: data
+    })
+  });
 
-// Cleanup function for OneSignal
-export const cleanupOneSignal = () => {
-  cleanupTimeouts();
-
-  if (window.OneSignal) {
-    window.OneSignal.push(() => {
-      window.OneSignal.setSubscription(false);
-    });
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`OneSignal API Error: ${errorData}`);
   }
+
+  return response.json();
 };
 
-// Task notification function
 export const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
     console.error('❌ OneSignal not loaded');
     return;
   }
-
-  // Clear any existing timeouts before setting new ones
-  cleanupTimeouts();
 
   try {
     const userId = await window.OneSignal.getUserId();
@@ -159,102 +106,85 @@ export const sendTaskNotification = async (task) => {
       return;
     }
 
-    const isLocal = window.location.hostname === 'localhost';
-    const apiUrl = isLocal
-      ? 'http://localhost:3001/api'
-      : 'https://taskngo.vercel.app/api';
-
-    // Send initial task notification
-    const response = await fetch(`${apiUrl}/send-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId,
-        title: 'Task Scheduled ⏰',
-        message: `New task scheduled: "${task.text}"`,
-        data: {
-          taskId: task.id,
-          scheduledTime: task.date,
-          type: 'new_task'
-        },
-        icon: '/logo192.png',
-        url: window.location.origin
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to send task notification');
-    }
-
-    // Schedule reminders
-    const taskTime = new Date(task.date).getTime();
-    const currentTime = Date.now();
-
-    // Schedule reminders only if task is in the future
-    if (taskTime > currentTime) {
-      // 5 minutes before
-      if (taskTime - currentTime > 5 * 60 * 1000) {
-        taskTimeouts.push(
-          setTimeout(() => sendReminder(userId, task, '5 minutes', apiUrl),
-            taskTime - currentTime - 5 * 60 * 1000)
-        );
+    await sendOneSignalNotification(
+      userId,
+      'Task Scheduled ⏰',
+      `New task scheduled: "${task.text}"`,
+      {
+        taskId: task.id,
+        scheduledTime: task.date,
+        type: 'new_task'
       }
+    );
 
-      // 1 minute before
-      if (taskTime - currentTime > 60 * 1000) {
-        taskTimeouts.push(
-          setTimeout(() => sendReminder(userId, task, '1 minute', apiUrl),
-            taskTime - currentTime - 60 * 1000)
-        );
-      }
-
-      // At task time
-      taskTimeouts.push(
-        setTimeout(() => sendReminder(userId, task, 'now', apiUrl),
-          taskTime - currentTime)
-      );
-    }
-
+    scheduleReminders(userId, task);
     console.log('✅ Task notifications scheduled');
   } catch (error) {
     console.error('❌ Error scheduling task notifications:', error);
-    cleanupTimeouts(); // Cleanup on error
+    cleanupTimeouts();
+    throw error;
   }
 };
 
-const sendReminder = async (userId, task, timeframe, apiUrl) => {
+const scheduleReminders = (userId, task) => {
+  const taskTime = new Date(task.date).getTime();
+  const currentTime = Date.now();
+
+  if (taskTime > currentTime) {
+    if (taskTime - currentTime > 5 * 60 * 1000) {
+      taskTimeouts.push(
+        setTimeout(() => sendReminder(userId, task, '5 minutes'),
+          taskTime - currentTime - 5 * 60 * 1000)
+      );
+    }
+
+    if (taskTime - currentTime > 60 * 1000) {
+      taskTimeouts.push(
+        setTimeout(() => sendReminder(userId, task, '1 minute'),
+          taskTime - currentTime - 60 * 1000)
+      );
+    }
+
+    taskTimeouts.push(
+      setTimeout(() => sendReminder(userId, task, 'now'),
+        taskTime - currentTime)
+    );
+  }
+};
+
+const sendReminder = async (userId, task, timeframe) => {
   try {
     const message = timeframe === 'now'
       ? `Task "${task.text}" is due now!`
       : `Task "${task.text}" is due in ${timeframe}!`;
 
-    const response = await fetch(`${apiUrl}/send-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId,
-        title: `Task Reminder ${timeframe === 'now' ? '🔔' : '⏰'}`,
-        message,
-        data: {
-          taskId: task.id,
-          timeframe,
-          type: 'reminder'
-        },
-        icon: '/logo192.png',
-        url: window.location.origin
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to send ${timeframe} reminder`);
-    }
+    await sendOneSignalNotification(
+      userId,
+      `Task Reminder ${timeframe === 'now' ? '🔔' : '⏰'}`,
+      message,
+      {
+        taskId: task.id,
+        timeframe,
+        type: 'reminder'
+      }
+    );
 
     console.log(`✅ ${timeframe} reminder sent`);
   } catch (error) {
     console.error(`❌ Error sending ${timeframe} reminder:`, error);
   }
+};
+
+export const cleanupOneSignal = () => {
+  cleanupTimeouts();
+  if (window.OneSignal) {
+    window.OneSignal.push(() => {
+      window.OneSignal.setSubscription(false);
+    });
+  }
+};
+
+const cleanupTimeouts = () => {
+  taskTimeouts.forEach(timeout => clearTimeout(timeout));
+  taskTimeouts = [];
 };
