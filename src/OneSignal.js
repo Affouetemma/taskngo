@@ -3,13 +3,16 @@ let taskTimeouts = [];
 
 // Initialize OneSignal
 export const initializeOneSignal = () => {
-  if (window.OneSignalInitialized) {
+  // Check if OneSignal is already initialized or if window.OneSignal exists
+  if (window.OneSignal && window.OneSignalInitialized) {
     console.warn('🔔 OneSignal is already initialized.');
     return;
   }
 
   // Use the recommended initialization pattern
-  window.OneSignal = window.OneSignal || [];
+  if (!window.OneSignal) {
+    window.OneSignal = [];
+  }
 
   window.OneSignal.push(() => {
     window.OneSignal.on('ready', () => {
@@ -22,6 +25,7 @@ export const initializeOneSignal = () => {
   const apiUrl = isLocal
     ? 'http://localhost:3001/api'
     : 'https://taskngo.vercel.app/api';
+
 
   // Push initialization to OneSignal
   window.OneSignal.push(() => {

@@ -1,53 +1,74 @@
 {
-    "headers": [
-      {
-        "source": "/service-worker.js",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/javascript"
-          },
-          {
-            "key": "Service-Worker-Allowed",
-            "value": "/"
-          },
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/OneSignalSDKWorker.js",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/javascript"
-          },
-          {
-            "key": "Service-Worker-Allowed",
-            "value": "/"
-          }
-        ]
-      },
-      {
-        "source": "/OneSignalSDKUpdaterWorker.js",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/javascript"
-          },
-          {
-            "key": "Service-Worker-Allowed",
-            "value": "/"
-          }
-        ]
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "/api/:path*",
-        "destination": "/api/:path*"
-      }
-    ]
+  "headers": [
+    {
+      "source": "/service-worker.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/OneSignalSDKWorker.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/OneSignalSDKUpdaterWorker.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,DELETE,PATCH,POST,PUT,OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
 }
