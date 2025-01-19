@@ -25,6 +25,21 @@
       "type": "image/png"
     },
     {
+      "src": "icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
       "src": "icon-32.png",
       "sizes": "32x32",
       "type": "image/png"
@@ -51,6 +66,7 @@
   ],
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
   "gcm_sender_id": "482941778795",
@@ -62,5 +78,5 @@
   },
   "related_applications": [],
   "prefer_related_applications": false,
-  "categories": ["productivity", "utilities"]
+  "categories": ["productivity", "utilities", "business", "tools"]
 }

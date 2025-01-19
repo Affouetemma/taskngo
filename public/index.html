@@ -1,35 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"></script>
 
+<!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"></script>
+<meta name="onesignal" content="notifyButton=true" />
 
-    <meta name="onesignal" content="notifyButton=true">
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Charset and Viewport -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!-- App Description -->
     <meta
       name="description"
       content="Taskngo is a lightweight and intuitive task management widget built with React."
     />
-    <!-- Social Media Sharing Meta Tags -->
+        <!-- Social Media Sharing Meta Tags -->
     <meta property="og:title" content="Taskngo - Smart Task Management" />
     <meta property="og:description" content="Organize your tasks with real-time alerts and smart scheduling features!" />
     <meta property="og:image" content="%PUBLIC_URL%/logo192.png" />
     <meta property="og:url" content="https://taskngo.vercel.app" />
-    <meta property="og:type" content="website" /><!-- Added og:type -->
+    <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Taskngo - Smart Task Management" />
     <meta name="twitter:description" content="Organize your tasks with real-time alerts and smart scheduling features!" />
     <meta name="twitter:image" content="%PUBLIC_URL%/logo192.png" />
 
-    <!-- iOS and Mobile-Specific Tags -->
+
+    <!-- Favicon -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    
+
+    <!-- iOS and Mobile-Specific Meta Tags -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" /><!-- Added apple capability -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Taskngo" />
     
+
+    <!-- iOS Splash Screens (Add More Based on Target Devices) -->
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash-screen.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash-screen-large.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)">
+
     <!-- PWA Support -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
@@ -37,7 +50,6 @@
 
 
     <title>Taskngo - Smart Task Management</title>
-
   </head>
   <body>
 
@@ -48,12 +60,25 @@
       </div>
     </noscript>
     
+       <!-- React Root Element -->
     <div id="root"></div>
 
-    <!-- Audio element with improved accessibility -->
+    <!-- Audio Alert for Notifications -->
     <audio id="alert-sound" preload="auto" aria-hidden="true">
       <source src="%PUBLIC_URL%/message-alert.mp3" type="audio/mpeg">
       Your browser does not support the audio element.
     </audio>
   </body>
 </html>
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .register('%PUBLIC_URL%/OneSignalSDKWorker.js')
+          .then((registration) => {
+            console.log('Service Worker registered:', registration);
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      }
