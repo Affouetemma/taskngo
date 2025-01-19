@@ -59,14 +59,9 @@ export default async function handler(req, res) {
       data: data || {},
       priority: 10,
       ttl: 86400, // 24 hours in seconds
-      // Optional: Add your icon URL
-      // chrome_web_icon: 'https://yourdomain.com/path/to/icon.png',
-      // Optional: Add buttons if needed
-      // web_buttons: [{
-      //   id: "view",
-      //   text: "View Task",
-      //   url: "https://yourdomain.com/tasks"
-      // }],
+      // Sound configuration
+      ios_sound: 'default',  // This applies to iOS/macOS (PWAs as well)
+      android_sound: 'default', // For Android devices, but often applicable to browsers as well
     };
 
     console.log('Sending notification:', {
@@ -97,6 +92,10 @@ export default async function handler(req, res) {
       };
       
       console.error('OneSignal API Error:', JSON.stringify(errorDetails, null, 2));
+      console.error('OneSignal API Error:', {
+        status: response.status,
+        response: await response.json(),
+      });
       
       return res.status(response.status).json({
         error: 'OneSignal API Error',
