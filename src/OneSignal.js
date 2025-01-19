@@ -48,7 +48,30 @@ export const initializeOneSignal = () => {
         message: "Thanks for subscribing to notifications!",
       }
     });
+// Add this after window.OneSignal.init({...});
+window.OneSignal.on('notificationClick', function(event) {
+  try {
+    const notificationData = event.notification.data;
+    const currentUrl = window.location.href;
+    
+    // Focus if we're already on the right page
+    if (currentUrl === window.location.origin + '/') {
+      window.focus();
+      return;
+    }
 
+    // Navigate within the same window
+    window.location.href = window.location.origin + '/';
+
+    // If there's specific task data, you can handle it here
+    if (notificationData && notificationData.taskId) {
+      // You can dispatch an action or set state to focus on this task
+      console.log('Task ID from notification:', notificationData.taskId);
+    }
+  } catch (error) {
+    console.error('Error handling notification click:', error);
+  }
+});
     window.OneSignal.on('subscriptionChange', async (isSubscribed) => {
       console.log(`🔔 Subscription changed:`, isSubscribed);
       if (isSubscribed) {
@@ -69,6 +92,7 @@ export const initializeOneSignal = () => {
   window.OneSignalInitialized = true;
 };
 
+
 const sendOneSignalNotification = async (userId, title, message, data = {}) => {
   const response = await fetch('https://onesignal.com/api/v1/notifications', {
     method: 'POST',
@@ -81,9 +105,14 @@ const sendOneSignalNotification = async (userId, title, message, data = {}) => {
       include_player_ids: [userId],
       contents: { en: message },
       headings: { en: title },
-      data: data
+      data: { 
+        ...data,
+        url: window.location.origin + '/' // Add this line
+      },
+      url: window.location.origin + '/' // Add this line
     })
   });
+
 
   if (!response.ok) {
     const errorData = await response.text();

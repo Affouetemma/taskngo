@@ -37,7 +37,7 @@ body {
 }
 
 .logo img {
-  height: 120px;
+  height: 100px;
 }
 
 .title {
@@ -45,7 +45,7 @@ body {
   text-align: center;
   font-size: 28px;
   font-weight: bold;
-  margin-right: 40px;
+  margin-right: 140px;
 }
 
 .alert-icon {
@@ -212,14 +212,15 @@ body {
   animation: shake 0.5s ease-in-out;
 }
 
-@@keyframes shake {
+
+@keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
 
 .shake {
-  animation: shake 0.5s infinite;
+  animation: shake 0.5s ease-in-out infinite;
 }
 
 /* Clock Icon */
@@ -228,25 +229,6 @@ body {
   font-size: 22px;
 }
 
-/* Alert Styling */
-.alert {
-  background-color: red;
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.alert button {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-}
 
 /* Footer */
 .footer {
@@ -354,4 +336,37 @@ body {
   .widget-rating .star {
     font-size: 24px;
   }
+}
+.update-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.update-alert p {
+  margin: 0;
+}
+
+.update-alert button {
+  background-color: white;
+  color: #4CAF50;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.update-alert button:hover {
+  background-color: #f0f0f0;
 }

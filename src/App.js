@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa';
-import { format, isToday, isFuture, startOfWeek, differenceInMilliseconds } from 'date-fns';
+import { format, isToday, isFuture} from 'date-fns';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
@@ -8,11 +8,10 @@ import './App.css';
 // eslint-disable-next-line no-unused-vars
 import { initializeOneSignal, sendTaskNotification, subscribeToNotification } from './OneSignal.js';
 import { cleanupOneSignal } from './OneSignal.js';
-import { unregisterAll } from './serviceWorkerRegistration.js';
 
 
-// When you need to clean up all service workers
-await unregisterAll();
+
+
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
 
@@ -26,24 +25,26 @@ const sendTaskReminder = (task, now, alertAudio, setTasks) => {
   
   if (timeRemaining <= fiveMinutes && timeRemaining > fiveMinutes - 1000 && !task.fiveMinAlert) {
     updatedTask = { ...task, fiveMinAlert: true, isShaking: true };
-    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
+    alertAudio.current?.play().catch(e => console.error('Audio play error:', e));
   } else if (timeRemaining <= oneMinute && timeRemaining > oneMinute - 1000 && !task.oneMinAlert) {
     updatedTask = { ...task, oneMinAlert: true, isShaking: true };
-    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
+    alertAudio.current?.play().catch(e => console.error('Audio play error:', e));
   } else if (timeRemaining <= 0 && timeRemaining > -1000 && !task.dueAlert) {
     updatedTask = { ...task, dueAlert: true, isShaking: true };
-    alertAudio.current.play().catch(e => console.error('Audio play error:', e));
+    alertAudio.current?.play().catch(e => console.error('Audio play error:', e));
   }
 
   if (updatedTask) {
     setTasks(prevTasks => prevTasks.map(t => (t.id === task.id ? updatedTask : t)));
-  }
-
-  // Reset shaking after a delay
-  if ((task.fiveMinAlert || task.oneMinAlert || task.dueAlert) && timeRemaining < -10000) {
-    setTasks(prevTasks =>
-      prevTasks.map(t => (t.id === task.id ? { ...t, isShaking: false } : t))
-    );
+    
+    // Remove shake after 5 seconds
+    setTimeout(() => {
+      setTasks(prevTasks =>
+        prevTasks.map(t => 
+          t.id === task.id ? { ...t, isShaking: false } : t
+        )
+      );
+    }, 5000);
   }
 };
 
@@ -51,14 +52,52 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [taskDate, setTaskDate] = useState('');
-  const [alertVisible, setAlertVisible] = useState(false);
   const [completionPopup, setCompletionPopup] = useState({ show: false, taskId: null });
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
-
+  const [updateAvailable, setUpdateAvailable] = useState(false);
  
-
+ 
+  
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').then(registration => {
+        // Check for existing updates
+        if (registration.waiting) {
+          setUpdateAvailable(true);
+        }
+  
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              setUpdateAvailable(true);
+            }
+          });
+        });
+  
+        // Check for updates every hour
+        const interval = setInterval(() => {
+          registration.update();
+        }, 1000 * 60 * 60);
+  
+        return () => clearInterval(interval);
+      }).catch(error => {
+        console.error('Service worker registration failed:', error);
+      });
+  
+      // Handle page refresh after update
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+  }, []);
   useEffect(() => {
     return () => {
       cleanupOneSignal();
@@ -167,9 +206,6 @@ const handleScheduleClick = (taskId) => {
     setCompletionPopup({ show: true, taskId: id });
   };
 
-  const resetTasks = () => {
-    setTasks([]);
-  };
 
   const handleCompletionResponse = (response) => {
     if (completionPopup.taskId) {
@@ -215,16 +251,42 @@ const handleScheduleClick = (taskId) => {
     }
   };
   
-
   useEffect(() => {
-    const now = new Date();
-    const nextSundayMidnight = startOfWeek(now, { weekStartsOn: 0 }).setHours(24, 0, 0, 0);
-    const timeUntilReset = differenceInMilliseconds(nextSundayMidnight, now);
-    const resetTimer = setTimeout(() => {
-      resetTasks();
-    }, timeUntilReset);
-    return () => clearTimeout(resetTimer);
-  }, []);
+    // Precompute time buckets for tasks
+    const initializeTaskBuckets = (tasks) => {
+      const now = Date.now();
+      return tasks.reduce((buckets, task) => {
+        const timeRemaining = new Date(task.date).getTime() - now;
+        const bucket = Math.floor(timeRemaining / 1000); // Group by seconds
+        if (!buckets[bucket]) buckets[bucket] = [];
+        buckets[bucket].push(task);
+        return buckets;
+      }, {});
+    };
+  
+    let taskBuckets = initializeTaskBuckets(tasks);
+    let bucketKeys = Object.keys(taskBuckets).map(Number).sort((a, b) => a - b);
+  
+    const processBuckets = () => {
+      const now = Date.now();
+      const currentBucket = bucketKeys[0];
+      
+      if (currentBucket !== undefined && currentBucket <= Math.floor(now / 1000)) {
+        const dueTasks = taskBuckets[currentBucket] || [];
+        dueTasks.forEach(task => {
+          sendTaskReminder(task, new Date(), alertAudio, setTasks);
+        });
+        
+        // Remove processed bucket
+        delete taskBuckets[currentBucket];
+        bucketKeys.shift();
+      }
+    };
+  
+    const interval = setInterval(processBuckets, 1000);
+  
+    return () => clearInterval(interval);
+  }, [tasks, alertAudio]);
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -241,10 +303,8 @@ const handleScheduleClick = (taskId) => {
     }, 1000);
   
     return () => clearInterval(interval);  // Cleanup
-  }, [alertAudio]); // Dependency on alertAudio only
+  }, [alertAudio]);
   
-  
-
   useEffect(() => {
     const fetchRating = async () => {
       const avgRating = await fetchAverageRating();
@@ -258,6 +318,12 @@ const handleScheduleClick = (taskId) => {
     <>
       <Analytics />
       <div className="App">
+      {updateAvailable && (
+          <div className="update-alert">
+            <p>A new version is available!</p>
+            <button onClick={() => window.location.reload()}>Update Now</button>
+          </div>
+        )}
         {scheduleAlert.show && (
           <div className="completion-popup">
             <p>This task has been scheduled!</p>
@@ -266,16 +332,10 @@ const handleScheduleClick = (taskId) => {
             </div>
           </div>
         )}
-<div>
+
         {/* ... */}
         <SpeedInsights />
-      </div>
-        {alertVisible && (
-          <div className="alert">
-            <p>Tasks have been reset for the week!</p>
-            <button onClick={() => setAlertVisible(false)}>&times;</button>
-          </div>
-        )}
+      
 
         {completionPopup.show && (
           <div className="completion-popup">
@@ -294,10 +354,6 @@ const handleScheduleClick = (taskId) => {
                 <img src="/logo.png" alt="Taskngo Logo" />
               </div>
               <h1 className="title">Taskngo</h1>
-              <FaBell
-                className="alert-icon"
-                onClick={() => setAlertVisible(true)}
-              />
             </div>
           </div>
 
