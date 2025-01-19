@@ -15,13 +15,16 @@ export function register(config) {
     }
 
     window.addEventListener('load', () => {
-      // First, unregister any existing service workers
+      // Wait for any existing service workers to be unregistered
       unregisterAll().then(() => {
-        // Do not register a new service worker - let OneSignal handle it
+        // Only proceed if we're on localhost
         if (isLocalhost) {
-          navigator.serviceWorker.ready.then(() => {
-            console.log('OneSignal service worker is ready');
-          });
+          // Give OneSignal time to register its service worker
+          setTimeout(() => {
+            navigator.serviceWorker.ready.then(() => {
+              console.log('Service worker is ready');
+            });
+          }, 1000);
         }
       });
     });
@@ -34,15 +37,20 @@ export async function unregisterAll() {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(
-        registrations.map(registration => registration.unregister())
+        registrations.map(registration => {
+          // Don't unregister OneSignal's service workers
+          if (!registration.scope.includes('OneSignal')) {
+            return registration.unregister();
+          }
+          return Promise.resolve();
+        })
       );
-      console.log('All service workers unregistered');
+      console.log('Non-OneSignal service workers unregistered');
     } catch (error) {
       console.error('Error unregistering service workers:', error);
     }
   }
 }
-
 // Function to unregister specific service worker
 export function unregister() {
   if (swRegistration) {
