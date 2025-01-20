@@ -19,11 +19,30 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Service Worker: Caching initial assets');
       return cache.addAll([
-       '/',
+        '/', 
         '/index.html',
         '/manifest.json',
+        '/app.css',
+        '/app.js',
+        'onesignal.js',
+        '/UpdateNotification.js',
+        '/firebase.js',
+        '/index.js',
+        '/reportWebVitals.js',
+        '/serviceWorkerRegistration.js',
         '/logo.png',
-        '/favicon.ico'
+        '/logo192.png',
+        '/logo512.png',
+        '/favicon.ico',
+        '/icon-16.png',
+        '/icon-32.png',
+        '/icon-64.png',
+        '/icon-72.png',
+        '/icon-96.png',
+        '/icon-144.png',
+        '/message-alert.mp3',
+        '/static/js/main.js',
+        '/static/css/main.css'
       ]);
     })
   );
