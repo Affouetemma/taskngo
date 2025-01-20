@@ -1,9 +1,3 @@
-const isLocalhost = Boolean(
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '[::1]' ||
-  window.location.hostname.match(/^127(?:\.[0-9]+){0,2}\.[0-9]+$/)
-);
-
 // Store service worker registration globally
 let swRegistration = null;
 
@@ -17,15 +11,43 @@ export function register(config) {
     window.addEventListener('load', () => {
       // Wait for any existing service workers to be unregistered
       unregisterAll().then(() => {
-        // Only proceed if we're on localhost
-        if (isLocalhost) {
-          // Give OneSignal time to register its service worker
-          setTimeout(() => {
-            navigator.serviceWorker.ready.then(() => {
-              console.log('Service worker is ready');
+        // Service worker registration
+        const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
+
+        navigator.serviceWorker
+          .register(swUrl)
+          .then(registration => {
+            swRegistration = registration;
+            console.log('Service worker registered with scope:', registration.scope);
+
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              const installingWorker = registration.installing;
+              if (installingWorker) {
+                installingWorker.onstatechange = () => {
+                  if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('New content is available; please refresh.');
+                    if (config && config.onUpdate) {
+                      config.onUpdate(registration); // Callback when update is found
+                    }
+                  }
+                };
+              }
             });
-          }, 1000);
-        }
+
+            // Ensure updates are handled properly
+            if (navigator.serviceWorker.controller) {
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('Service worker updated. Refreshing page.');
+                if (config && config.onSuccess) {
+                  config.onSuccess(registration); // Callback on successful installation
+                }
+              });
+            }
+          })
+          .catch(error => {
+            console.error('Service worker registration failed:', error);
+          });
       });
     });
   }
@@ -51,6 +73,7 @@ export async function unregisterAll() {
     }
   }
 }
+
 // Function to unregister specific service worker
 export function unregister() {
   if (swRegistration) {

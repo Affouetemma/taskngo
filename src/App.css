@@ -337,36 +337,50 @@ body {
     font-size: 24px;
   }
 }
-.update-alert {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #4CAF50;
-  color: white;
-  padding: 15px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  z-index: 1000;
+.update-notification {
+  position: relative;
+  margin-left: auto;
+  padding-right: 20px;
+}
+
+.update-notification button {
+  background: none;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 15px;
+  justify-content: center;
 }
 
-.update-alert p {
-  margin: 0;
+.update-notification .icon {
+  font-size: 20px;
+  color: #666;
 }
 
-.update-alert button {
+.update-banner {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 10px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+  width: 200px;
+}
+
+.update-banner button {
   background-color: white;
   color: #4CAF50;
-  border: none;
-  padding: 8px 15px;
+  padding: 8px 16px;
   border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s ease;
+  width: 100%;
+  margin-top: 10px;
+  font-weight: 500;
 }
 
-.update-alert button:hover {
+.update-banner button:hover {
   background-color: #f0f0f0;
 }

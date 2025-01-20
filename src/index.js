@@ -29,5 +29,12 @@ root.render(
 setTimeout(() => {
   serviceWorkerRegistration.register();
 }, 2000);
+if ('Notification' in window) {
+  Notification.requestPermission().then((permission) => {
+    if (permission === 'granted') {
+      console.log('Notification permission granted.');
+    }
+  });
+}
 
 reportWebVitals(console.log);

@@ -6,11 +6,21 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
 import './App.css';
 // eslint-disable-next-line no-unused-vars
-import { initializeOneSignal, sendTaskNotification, subscribeToNotification } from './OneSignal.js';
+import {  sendTaskNotification} from './OneSignal.js';
 import { cleanupOneSignal } from './OneSignal.js';
+import { register } from './serviceWorkerRegistration.js';
+import UpdateNotification from './UpdateNotification.js';
 
 
-
+// Register the service worker
+register({
+  onSuccess: (registration) => {
+    console.log('Service worker registered successfully', registration);
+  },
+  onUpdate: (registration) => {
+    console.log('Service worker updated', registration);
+  },
+});
 
 // Constants
 const ALERT_SOUND = '/message-alert.mp3';
@@ -56,48 +66,40 @@ function App() {
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
- 
  
   
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').then(registration => {
-        // Check for existing updates
-        if (registration.waiting) {
-          setUpdateAvailable(true);
-        }
+    const handleOnline = () => {
+      console.log('App is online');
+      // You can add additional online handling here
+    };
   
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              setUpdateAvailable(true);
-            }
-          });
-        });
+    const handleOffline = () => {
+      console.log('App is offline');
+      // You can show a custom offline notification here
+    };
   
-        // Check for updates every hour
-        const interval = setInterval(() => {
-          registration.update();
-        }, 1000 * 60 * 60);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
   
-        return () => clearInterval(interval);
-      }).catch(error => {
-        console.error('Service worker registration failed:', error);
-      });
-  
-      // Handle page refresh after update
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+ 
+  useEffect(() => {
+    const savedTasks = localStorage.getItem('tasks');
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
     }
   }, []);
+  
+  useEffect(() => {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }, [tasks]);
+
+  
   useEffect(() => {
     return () => {
       cleanupOneSignal();
@@ -155,6 +157,8 @@ const handleScheduleClick = (taskId) => {
       setScheduleAlert({ show: false, taskId: null });
     }, 3000);
   };
+
+  
 
   const addTask = async () => {
     console.log('Adding task:', newTask.trim(), taskDate);
@@ -318,12 +322,7 @@ const handleScheduleClick = (taskId) => {
     <>
       <Analytics />
       <div className="App">
-      {updateAvailable && (
-          <div className="update-alert">
-            <p>A new version is available!</p>
-            <button onClick={() => window.location.reload()}>Update Now</button>
-          </div>
-        )}
+     
         {scheduleAlert.show && (
           <div className="completion-popup">
             <p>This task has been scheduled!</p>
@@ -336,7 +335,6 @@ const handleScheduleClick = (taskId) => {
         {/* ... */}
         <SpeedInsights />
       
-
         {completionPopup.show && (
           <div className="completion-popup">
             <p>Have you completed this task?</p>
@@ -354,6 +352,7 @@ const handleScheduleClick = (taskId) => {
                 <img src="/logo.png" alt="Taskngo Logo" />
               </div>
               <h1 className="title">Taskngo</h1>
+              <UpdateNotification /> 
             </div>
           </div>
 
