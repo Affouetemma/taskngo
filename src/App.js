@@ -10,6 +10,7 @@ import {  sendTaskNotification} from './OneSignal.js';
 import { cleanupOneSignal } from './OneSignal.js';
 import { register } from './serviceWorkerRegistration.js';
 import UpdateNotification from './UpdateNotification.js';
+import WeglotInit from './WeglotInit.js';
 
 
 // Register the service worker
@@ -69,7 +70,7 @@ function App() {
   const [taskPriority, setTaskPriority] = useState('medium');
   const [priorityFilter, setPriorityFilter] = useState('all');
  
-  
+
   useEffect(() => {
     const handleOnline = () => {
       console.log('App is online');
@@ -327,6 +328,7 @@ const handleScheduleClick = (taskId) => {
     <>
       <Analytics />
       <div className="App">
+        <WeglotInit />
      
         {scheduleAlert.show && (
           <div className="completion-popup">
@@ -351,13 +353,14 @@ const handleScheduleClick = (taskId) => {
         )}
 
         <div className="widget">
-          <div className="header">
-            <div className="header-content">
-              <div className="logo">
-                <img src="/logo.png" alt="Taskngo Logo" />
-              </div>
-              <h1 className="title">Taskngo</h1>
-              <UpdateNotification /> 
+        <div className="header">
+  <div className="header-content">
+    <div className="logo">
+      <img src="/logo.png" alt="Taskngo Logo" />
+    </div>
+    <h1 className="title">Taskngo</h1>
+    <div id="weglot-language-switcher"></div>
+    <UpdateNotification /> 
             </div>
           </div>
 
