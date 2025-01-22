@@ -397,19 +397,30 @@ const handleScheduleClick = (taskId) => {
   </select>
 </div>
           <div className="categories">
-            <div className="category">
-              <h2>Today</h2>
-              {tasks.filter((task) => isToday(task.date) && !task.archived && !task.completed).map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  deleteTask={deleteTask}
-                  archiveTask={archiveTask}
-                  completeTask={completeTask}
-                  onScheduleClick={handleScheduleClick}
-                />
-              ))}
-            </div>
+          <div className="category">
+  <h2>Today</h2>
+  {tasks
+    .filter((task) => 
+      (priorityFilter === 'all' || task.priority === priorityFilter.toLowerCase().replace(' Only', '')) &&
+      isToday(task.date) && 
+      !task.archived && 
+      !task.completed
+    )
+    .sort((a, b) => {
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      return priorityWeight[b.priority] - priorityWeight[a.priority];
+    })
+    .map((task) => (
+      <TaskItem
+        key={task.id}
+        task={task}
+        deleteTask={deleteTask}
+        archiveTask={archiveTask}
+        completeTask={completeTask}
+        onScheduleClick={handleScheduleClick}
+      />
+    ))}
+</div>
             <div className="category">
   <h2>Upcoming</h2>
   {tasks
