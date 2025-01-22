@@ -13,7 +13,6 @@ Taskngo is a standalone Progressive Web App (PWA) for task management built with
 - **Task Scheduling**:
    - Customizable date and time for each task,
    - Automatic scheduling alerts,
-   - Weekly task reset (every Sunday midnight).
 - **Cross-Platform Installation**:
    - Install on smartphones (Android/iOS),
    - Add to desktop (Windows/Mac/Linux),
