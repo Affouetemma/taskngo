@@ -384,3 +384,59 @@ body {
 .update-banner button:hover {
   background-color: #f0f0f0;
 }
+/* Priority Select and Filter */
+.priority-select, .priority-filter {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.filter-controls {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+}
+
+/* Priority Task Styling */
+.task-item.priority-high {
+  border-left: 4px solid #dc3545;
+  background-color: #fff5f5;
+}
+
+.task-item.priority-medium {
+  border-left: 4px solid #ffc107;
+  background-color: #fffbeb;
+}
+
+.task-item.priority-low {
+  border-left: 4px solid #28a745;
+  background-color: #f0fff4;
+}
+
+.task-priority {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 10px;
+  background-color: #eee;
+}
+
+.priority-high .task-priority {
+  background-color: #dc3545;
+  color: white;
+}
+
+.priority-medium .task-priority {
+  background-color: #ffc107;
+  color: black;
+}
+
+.priority-low .task-priority {
+  background-color: #28a745;
+  color: white;
+}

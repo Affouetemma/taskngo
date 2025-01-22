@@ -66,6 +66,8 @@ function App() {
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
   const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
+  const [taskPriority, setTaskPriority] = useState('medium');
+  const [priorityFilter, setPriorityFilter] = useState('all');
  
   
   useEffect(() => {
@@ -167,6 +169,7 @@ const handleScheduleClick = (taskId) => {
         id: Date.now(),
         text: newTask.trim(),
         date: new Date(taskDate),
+        priority: taskPriority,
         archived: false,
         completed: false,
         isShaking: false,
@@ -181,6 +184,7 @@ const handleScheduleClick = (taskId) => {
         setTasks((prevTasks) => [...prevTasks, task]);
         setNewTask('');
         setTaskDate('');
+        setTaskPriority('medium');
       } catch (error) {
     
         // Show user-friendly error message
@@ -189,6 +193,7 @@ const handleScheduleClick = (taskId) => {
         setTasks((prevTasks) => [...prevTasks, task]);
         setNewTask('');
         setTaskDate('');
+        setTaskPriority('medium');
       }
     } else {
       alert("Please provide both a task and a date.");
@@ -368,9 +373,29 @@ const handleScheduleClick = (taskId) => {
               value={taskDate}
               onChange={(e) => setTaskDate(e.target.value)}
             />
+             <select 
+    value={taskPriority}
+    onChange={(e) => setTaskPriority(e.target.value)}
+    className="priority-select"
+  >
+    <option value="high">High Priority</option>
+    <option value="medium">Medium Priority</option>
+    <option value="low">Low Priority</option>
+  </select>
             <button onClick={addTask}>Add Task</button>
           </div>
-
+          <div className="filter-controls">
+  <select 
+    value={priorityFilter}
+    onChange={(e) => setPriorityFilter(e.target.value)}
+    className="priority-filter"
+  >
+    <option value="all">All Priorities</option>
+    <option value="high">High Priority Only</option>
+    <option value="medium">Medium Priority Only</option>
+    <option value="low">Low Priority Only</option>
+  </select>
+</div>
           <div className="categories">
             <div className="category">
               <h2>Today</h2>
@@ -385,60 +410,78 @@ const handleScheduleClick = (taskId) => {
                 />
               ))}
             </div>
-
             <div className="category">
-            <h2>Upcoming</h2>
-            {tasks
-              .filter(
-                (task) =>
-                  isFuture(task.date) &&
-                  !isToday(task.date) &&
-                  !task.archived &&
-                  !task.completed
-              )
-              .map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  deleteTask={deleteTask}
-                  archiveTask={archiveTask}
-                  completeTask={completeTask}
-                  onScheduleClick={handleScheduleClick}
-                />
-              ))}
-          </div>
+  <h2>Upcoming</h2>
+  {tasks
+    .filter((task) => 
+      (priorityFilter === 'all' || task.priority === priorityFilter) &&
+      isFuture(task.date) &&
+      !isToday(task.date) &&
+      !task.archived &&
+      !task.completed
+    )
+    .sort((a, b) => {
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      return priorityWeight[b.priority] - priorityWeight[a.priority];
+    })
+    .map((task) => (
+      <TaskItem
+        key={task.id}
+        task={task}
+        deleteTask={deleteTask}
+        archiveTask={archiveTask}
+        completeTask={completeTask}
+        onScheduleClick={handleScheduleClick}
+      />
+    ))}
+</div>
 
-          <div className="category completed">
-            <h2>Completed</h2>
-            {tasks
-              .filter((task) => task.completed && !task.archived)
-              .map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  deleteTask={deleteTask}
-                  archiveTask={archiveTask}
-                  completeTask={completeTask}
-                  onScheduleClick={handleScheduleClick}
-                />
-              ))}
-          </div>
+<div className="category completed">
+  <h2>Completed</h2>
+  {tasks
+    .filter((task) => 
+      (priorityFilter === 'all' || task.priority === priorityFilter) &&
+      task.completed && 
+      !task.archived
+    )
+    .sort((a, b) => {
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      return priorityWeight[b.priority] - priorityWeight[a.priority];
+    })
+    .map((task) => (
+      <TaskItem
+        key={task.id}
+        task={task}
+        deleteTask={deleteTask}
+        archiveTask={archiveTask}
+        completeTask={completeTask}
+        onScheduleClick={handleScheduleClick}
+      />
+    ))}
+</div>
 
-          <div className="category archived">
-            <h2>Archived</h2>
-            {tasks
-              .filter((task) => task.archived)
-              .map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  deleteTask={deleteTask}
-                  archiveTask={archiveTask}
-                  completeTask={completeTask}
-                  onScheduleClick={handleScheduleClick}
-                />
-              ))}
-          </div>
+<div className="category archived">
+  <h2>Archived</h2>
+  {tasks
+    .filter((task) => 
+      (priorityFilter === 'all' || task.priority === priorityFilter) &&
+      task.archived
+    )
+    .sort((a, b) => {
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      return priorityWeight[b.priority] - priorityWeight[a.priority];
+    })
+    .map((task) => (
+      <TaskItem
+        key={task.id}
+        task={task}
+        deleteTask={deleteTask}
+        archiveTask={archiveTask}
+        completeTask={completeTask}
+        onScheduleClick={handleScheduleClick}
+      />
+    ))}
+</div>
         </div>
 
         <div className="widget-rating">
@@ -469,7 +512,8 @@ const handleScheduleClick = (taskId) => {
 // TaskItem component
 const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick }) => {
   return (
-    <div className={`task-item ${task.isShaking ? 'shake' : ''}`}>
+    <div className={`task-item priority-${task.priority} ${task.isShaking ? 'shake' : ''}`}>
+      <span className="task-priority">{task.priority.toUpperCase()}</span>
       <span>{task.text}</span>
       <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
       <div className="icons">
