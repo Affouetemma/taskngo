@@ -13,7 +13,9 @@ const script = document.createElement('script');
 script.src = 'https://cdn.onesignal.com/sdks/OneSignalSDK.js';
 script.async = true;
 script.onload = () => {
-  initializeOneSignal();
+  initializeOneSignal(); // Initialize OneSignal
+  // Register service worker after OneSignal is initialized
+  serviceWorkerRegistration.register(); 
 };
 document.head.appendChild(script);
 
@@ -25,10 +27,7 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker after OneSignal is initialized
-setTimeout(() => {
-  serviceWorkerRegistration.register();
-}, 2000);
+// Request notification permission
 if ('Notification' in window) {
   Notification.requestPermission().then((permission) => {
     if (permission === 'granted') {

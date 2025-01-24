@@ -3,7 +3,6 @@ import { FaArchive, FaTrashAlt, FaBell, FaClock, FaCheck } from 'react-icons/fa'
 import { format, isToday, isFuture} from 'date-fns';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react"
-import { addUserRating, updateAverageRating, fetchAverageRating } from './firebase.js';
 import './App.css';
 // eslint-disable-next-line no-unused-vars
 import {  sendTaskNotification} from './OneSignal.js';
@@ -11,6 +10,8 @@ import { cleanupOneSignal } from './OneSignal.js';
 import { register } from './serviceWorkerRegistration.js';
 import UpdateNotification from './UpdateNotification.js';
 import WeglotInit from './WeglotInit.js';
+
+
 
 
 // Register the service worker
@@ -65,31 +66,28 @@ function App() {
   const [taskDate, setTaskDate] = useState('');
   const [completionPopup, setCompletionPopup] = useState({ show: false, taskId: null });
   const [scheduleAlert, setScheduleAlert] = useState({ show: false, taskId: null });
-  const [widgetRating, setWidgetRating] = useState(0);
   const alertAudio = useRef(null);
   const [taskPriority, setTaskPriority] = useState('medium');
   const [priorityFilter, setPriorityFilter] = useState('all');
- 
+  const [ currentLanguage,setCurrentLanguage] = useState(window.Weglot?.getCurrentLang() || 'en');
+  
+
+
+
 
   useEffect(() => {
-    const handleOnline = () => {
-      console.log('App is online');
-      // You can add additional online handling here
-    };
+    if (window.Weglot) {
+      const handleLanguageChange = () => {
+        const newLang = window.Weglot.getCurrentLang();
+        setCurrentLanguage(newLang);
+      };
+      window.Weglot.on('languageChanged', handleLanguageChange);
+      return () => window.Weglot.off('languageChanged', handleLanguageChange);
+    }
+  });
   
-    const handleOffline = () => {
-      console.log('App is offline');
-      // You can show a custom offline notification here
-    };
   
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
   
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
  
   useEffect(() => {
     const savedTasks = localStorage.getItem('tasks');
@@ -234,33 +232,7 @@ const handleScheduleClick = (taskId) => {
   };
   
 
-  const handleWidgetRating = async (ratingValue) => {
-    let userId;
-    
-    try {
-      setWidgetRating(ratingValue);
-      userId = Date.now().toString();
-      await addUserRating(userId, ratingValue);
-      await updateAverageRating();
-      console.log('Rating updated successfully:', ratingValue);
-    } catch (error) {
-      console.error('Error updating rating:', error);
-      
-      if (error.code === 'failed-precondition' || error.code === 'unavailable') {
-        console.log('Connection issue detected, retrying...');
-        setTimeout(async () => {
-          try {
-            await addUserRating(userId, ratingValue);
-            await updateAverageRating();
-            console.log('Rating updated successfully on retry');
-          } catch (retryError) {
-            console.error('Failed to update rating after retry:', retryError);
-          }
-        }, 2000);
-      }
-    }
-  };
-  
+ 
   useEffect(() => {
     // Precompute time buckets for tasks
     const initializeTaskBuckets = (tasks) => {
@@ -315,42 +287,48 @@ const handleScheduleClick = (taskId) => {
     return () => clearInterval(interval);  // Cleanup
   }, [alertAudio]);
   
-  useEffect(() => {
-    const fetchRating = async () => {
-      const avgRating = await fetchAverageRating();
-      setWidgetRating(avgRating);
-    };
 
-    fetchRating();
-  }, []);
 
   return (
     <>
+    
       <Analytics />
       <div className="App">
         <WeglotInit />
      
         {scheduleAlert.show && (
-          <div className="completion-popup">
-            <p>This task has been scheduled!</p>
-            <div className="button-container">
-              <button onClick={() => setScheduleAlert({ show: false, taskId: null })}>OK</button>
-            </div>
-          </div>
-        )}
+  <div className="completion-popup">
+    <p>
+      {currentLanguage === 'fr' ? "Cette tâche a été planifiée!" : "This task has been scheduled!"}
+    </p>
+    <div className="button-container">
+      <button onClick={() => setScheduleAlert({ show: false, taskId: null })}>
+        {currentLanguage === 'fr' ? "D'accord" : "OK"}
+      </button>
+    </div>
+  </div>
+)}
+
 
         {/* ... */}
         <SpeedInsights />
       
         {completionPopup.show && (
-          <div className="completion-popup">
-            <p>Have you completed this task?</p>
-            <div className="button-container">
-              <button onClick={() => handleCompletionResponse('yes')}>Yes</button>
-              <button onClick={() => handleCompletionResponse('no')}>No</button>
-            </div>
-          </div>
-        )}
+  <div className="completion-popup">
+    <p>
+      {currentLanguage === 'fr' ? "Avez-vous terminé cette tâche?" : "Have you completed this task?"}
+    </p>
+    <div className="button-container">
+      <button onClick={() => handleCompletionResponse('yes')}>
+        {currentLanguage === 'fr' ? "Oui" : "Yes"}
+      </button>
+      <button onClick={() => handleCompletionResponse('no')}>
+        {currentLanguage === 'fr' ? "Non" : "No"}
+      </button>
+    </div>
+  </div>
+)}
+
 
         <div className="widget">
         <div className="header">
@@ -498,21 +476,7 @@ const handleScheduleClick = (taskId) => {
 </div>
         </div>
 
-        <div className="widget-rating">
-          <h3>Rate this Widget:</h3>
-          <div className="star-rating">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <span
-                key={star}
-                className={`star ${star <= widgetRating ? 'filled' : ''}`}
-                onClick={() => handleWidgetRating(star)}
-              >
-                &#9733;
-              </span>
-            ))}
-          </div>
-          <p>Your Rating: {widgetRating} / 5</p>
-        </div>
+
 
         <footer className="footer">
           &copy; Made by Affouet Emmanuella Ouattara. All rights reserved.

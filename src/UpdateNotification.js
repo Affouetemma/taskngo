@@ -2,30 +2,65 @@ import React, { useState, useEffect } from 'react';
 import { FaInfo } from 'react-icons/fa';
 
 const UpdateNotification = () => {
-  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('en'); // Default language set to English
 
   useEffect(() => {
     console.log('UpdateNotification mounted');
-    // Force showUpdateBanner to true for testing
-    setShowUpdateBanner(true);
-  }, []);
+
+    const initializeWeglot = () => {
+      // Check if Weglot is available
+      if (window.Weglot) {
+        // Set the current language from Weglot
+        setCurrentLanguage(window.Weglot.getCurrentLang() || 'en');
+
+        // Attach event listener for language change
+        window.Weglot.on('languageChanged', (newLang) => {
+          console.log('Language changed:', newLang);
+          setCurrentLanguage(newLang);  // Set new language when Weglot changes it
+        });
+      } else {
+        console.error('Weglot is not initialized yet.');
+      }
+    };
+
+    // Initialize Weglot after a small delay to allow it to load
+    const timeoutId = setTimeout(initializeWeglot, 1000);
+
+    return () => {
+      // Clean up the event listener when component unmounts
+      clearTimeout(timeoutId);
+      if (window.Weglot) {
+        window.Weglot.off('languageChanged');
+      }
+    };
+  }, []); // Only run this effect once when component mounts
 
   const handleInfoClick = () => {
     console.log('Info icon clicked');
-    console.log('Previous showNotification state:', showNotification);
-    setShowNotification(prev => {
-      console.log('Setting showNotification to:', !prev);
-      return !prev;
-    });
+    setShowNotification(prev => !prev);  // Toggle notification
   };
 
   const handleUpdate = () => {
     console.log('Update button clicked');
-    window.location.reload();
+    window.location.reload();  // Reload to apply the update
   };
 
-  console.log('Rendering with states:', { showNotification, showUpdateBanner });
+  const getNotificationText = () => {
+    if (currentLanguage === 'fr') {
+      return {
+        message: 'Une nouvelle version est disponible !',
+        buttonText: 'Mettre à jour maintenant'
+      };
+    } else {
+      return {
+        message: 'A new version is available!',
+        buttonText: 'Update Now'
+      };
+    }
+  };
+
+  const { message, buttonText } = getNotificationText();
 
   return (
     <div style={{
@@ -64,9 +99,10 @@ const UpdateNotification = () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
           zIndex: 1000,
           width: '200px',
-          marginTop: '10px'
+          marginTop: '10px',
+          textAlign: 'center' // Centers the text
         }}>
-          <p>A new version is available!</p>
+          <p>{message}</p>
           <button 
             onClick={handleUpdate}
             style={{
@@ -77,10 +113,11 @@ const UpdateNotification = () => {
               width: '100%',
               marginTop: '10px',
               border: 'none',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              textAlign: 'center' // Centers button text
             }}
           >
-            Update Now
+            {buttonText}
           </button>
         </div>
       )}

@@ -18,7 +18,7 @@ export const initializeOneSignal = () => {
         enable: true,
         size: 'medium',
         theme: 'default',
-        position: 'bottop-left',
+        position: 'bottom-left',
         showCredit: false,
         text: {
           'tip.state.unsubscribed': 'Get task notifications',
