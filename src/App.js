@@ -393,13 +393,14 @@ const handleScheduleClick = (taskId) => {
     })
     .map((task) => (
       <TaskItem
-        key={task.id}
-        task={task}
-        deleteTask={deleteTask}
-        archiveTask={archiveTask}
-        completeTask={completeTask}
-        onScheduleClick={handleScheduleClick}
-      />
+      key={task.id}
+      task={task}
+      deleteTask={deleteTask}
+      archiveTask={archiveTask}
+      completeTask={completeTask}
+      onScheduleClick={handleScheduleClick}
+      currentLanguage={currentLanguage}
+    />
     ))}
 </div>
             <div className="category">
@@ -418,13 +419,14 @@ const handleScheduleClick = (taskId) => {
     })
     .map((task) => (
       <TaskItem
-        key={task.id}
-        task={task}
-        deleteTask={deleteTask}
-        archiveTask={archiveTask}
-        completeTask={completeTask}
-        onScheduleClick={handleScheduleClick}
-      />
+      key={task.id}
+      task={task}
+      deleteTask={deleteTask}
+      archiveTask={archiveTask}
+      completeTask={completeTask}
+      onScheduleClick={handleScheduleClick}
+      currentLanguage={currentLanguage}
+    />
     ))}
 </div>
 
@@ -442,13 +444,14 @@ const handleScheduleClick = (taskId) => {
     })
     .map((task) => (
       <TaskItem
-        key={task.id}
-        task={task}
-        deleteTask={deleteTask}
-        archiveTask={archiveTask}
-        completeTask={completeTask}
-        onScheduleClick={handleScheduleClick}
-      />
+      key={task.id}
+      task={task}
+      deleteTask={deleteTask}
+      archiveTask={archiveTask}
+      completeTask={completeTask}
+      onScheduleClick={handleScheduleClick}
+      currentLanguage={currentLanguage}
+    />
     ))}
 </div>
 
@@ -465,13 +468,14 @@ const handleScheduleClick = (taskId) => {
     })
     .map((task) => (
       <TaskItem
-        key={task.id}
-        task={task}
-        deleteTask={deleteTask}
-        archiveTask={archiveTask}
-        completeTask={completeTask}
-        onScheduleClick={handleScheduleClick}
-      />
+      key={task.id}
+      task={task}
+      deleteTask={deleteTask}
+      archiveTask={archiveTask}
+      completeTask={completeTask}
+      onScheduleClick={handleScheduleClick}
+      currentLanguage={currentLanguage}
+    />
     ))}
 </div>
         </div>
@@ -489,9 +493,21 @@ const handleScheduleClick = (taskId) => {
 
 // TaskItem component
 const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick }) => {
+  const priorityLabels = {
+    en: {
+      high: 'High Priority',
+      medium: 'Medium Priority',
+      low: 'Low Priority'
+    },
+    fr: {
+      high: 'Haute priorité',
+      medium: 'Priorité moyenne',
+      low: 'Basse priorité'
+    }
+  };
   return (
     <div className={`task-item priority-${task.priority} ${task.isShaking ? 'shake' : ''}`}>
-      <span className="task-priority">{task.priority.toUpperCase()}</span>
+      <span className="task-priority">{priorityLabels[task.priority]}</span>
       <span>{task.text}</span>
       <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
       <div className="icons">
