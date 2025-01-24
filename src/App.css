@@ -357,30 +357,35 @@ body {
 }
 
 /* Priority Task Styling */
-.task-item.priority-high {
-  background-color: #dc3545;
-  padding: 5px 15px;
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px;
   border-radius: 5px;
-  color: white;
+  background-color: white;
+}
+
+/* Priority-specific backgrounds */
+.task-item.priority-high {
+  border-left: 4px solid #dc3545;
 }
 
 .task-item.priority-medium {
   border-left: 4px solid #ffc107;
-  background-color: #fffbeb;
 }
 
 .task-item.priority-low {
   border-left: 4px solid #28a745;
-  background-color: #f0fff4;
 }
 
+/* Priority badges */
 .task-priority {
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: bold;
-  margin-right: 10px;
-  background-color: #eee;
 }
 
 .priority-high .task-priority {

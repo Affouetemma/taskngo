@@ -148,7 +148,7 @@ export const initializeOneSignal = () => {
         },
       },
       welcomeNotification: {
-        disable: false,
+        disable: true,
         title: currentTranslations.welcome.title,
         message: currentTranslations.welcome.message,
       }
