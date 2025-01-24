@@ -492,24 +492,29 @@ const handleScheduleClick = (taskId) => {
 }
 
 // TaskItem component
-const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick }) => {
-  const priorityLabels = {
-    en: {
-      high: 'High Priority',
-      medium: 'Medium Priority',
-      low: 'Low Priority'
-    },
-    fr: {
-      high: 'Haute priorité',
-      medium: 'Priorité moyenne',
-      low: 'Basse priorité'
-    }
+const TaskItem = ({ task, deleteTask, archiveTask, completeTask, onScheduleClick, currentLanguage }) => {
+  const priorityColors = {
+    high: 'bg-red-100 border-l-4 border-red-500',
+    medium: 'bg-yellow-100 border-l-4 border-yellow-500',
+    low: 'bg-green-100 border-l-4 border-green-500'
   };
+  
   return (
-    <div className={`task-item priority-${task.priority} ${task.isShaking ? 'shake' : ''}`}>
-      <span className="task-priority">{priorityLabels[task.priority]}</span>
+    <div className={`task-item ${priorityColors[task.priority]} ${task.isShaking ? 'shake' : ''}`}>
+    <div className="flex items-center gap-2">
+      <span className={`task-priority px-2 py-1 rounded text-sm font-semibold
+        ${task.priority === 'high' ? 'bg-red-500 text-white' : 
+          task.priority === 'medium' ? 'bg-yellow-500 text-white' : 
+          'bg-green-500 text-white'}`}>
+        {currentLanguage === 'fr' 
+          ? task.priority === 'high' ? 'Élevée'
+            : task.priority === 'medium' ? 'Moyenne'
+            : 'Basse'
+          : task.priority.toUpperCase()}
+      </span>
       <span>{task.text}</span>
-      <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
+    </div>
+    <span>{format(task.date, 'MM/dd/yyyy HH:mm')}</span>
       <div className="icons">
         {/* Clock icon for Today or Upcoming tasks */}
         {task.showClockIcon && !task.archived && !task.completed && (

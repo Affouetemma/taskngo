@@ -358,8 +358,10 @@ body {
 
 /* Priority Task Styling */
 .task-item.priority-high {
-  border-left: 4px solid #dc3545;
-  background-color: #fff5f5;
+  background-color: #dc3545;
+  padding: 5px 15px;
+  border-radius: 5px;
+  color: white;
 }
 
 .task-item.priority-medium {
