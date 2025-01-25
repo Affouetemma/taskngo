@@ -233,8 +233,7 @@ const sendOneSignalNotification = async (userId, title, message, data = {}) => {
 
 export const sendTaskNotification = async (task) => {
   if (!window.OneSignal) {
-    console.error('❌ OneSignal not loaded');
-    return;
+    await initializeOneSignal(); // Reinitialize if not present
   }
 
   try {
@@ -243,6 +242,7 @@ export const sendTaskNotification = async (task) => {
       console.error('❌ No OneSignal User ID available');
       return;
     }
+
 
     const currentLang = getCurrentLanguage();
     const currentTranslations = translations[currentLang];

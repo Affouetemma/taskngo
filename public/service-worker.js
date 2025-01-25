@@ -1,12 +1,12 @@
-const CACHE_NAME = 'my-cache-v2'; // Incremented version
+const CACHE_NAME = 'my-cache-v2';
 const cacheWhitelist = [CACHE_NAME];
 
-// Function to notify clients of updates
 const notifyClientsOfUpdate = () => {
   self.clients.matchAll().then(clients => {
     clients.forEach(client => {
       client.postMessage({
-        type: 'UPDATE_AVAILABLE'
+        type: 'UPDATE_AVAILABLE',
+        version: CACHE_NAME
       });
     });
   });
@@ -14,7 +14,6 @@ const notifyClientsOfUpdate = () => {
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
-  self.skipWaiting(); // Force immediate activation
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Service Worker: Caching initial assets');
@@ -55,11 +54,9 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
+            if (!cacheWhitelist.includes(cacheName)) {
               console.log(`Service Worker: Deleting old cache ${cacheName}`);
-              return caches.delete(cacheName).catch((err) => {
-                console.error(`Error deleting cache ${cacheName}:`, err);
-              });
+              return caches.delete(cacheName);
             }
             return Promise.resolve();
           })
@@ -76,21 +73,32 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        return cachedResponse; // Serve from cache if available
+        return cachedResponse;
       }
       return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        
+        const responseToCache = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, response.clone()); // Cache new responses
+          cache.put(event.request, responseToCache);
         });
         return response;
-      }).catch(() => caches.match(event.request)); // Fallback to cache if network fails
+      }).catch(() => caches.match(event.request));
     })
   );
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting(); // Skip waiting to activate immediately
+  if (event.data?.type === 'CHECK_VERSION') {
+    const currentVersion = CACHE_NAME;
+    event.ports[0].postMessage({ 
+      version: currentVersion,
+      updateAvailable: true
+    });
+  } else if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
 
@@ -105,7 +113,7 @@ self.addEventListener('push', function(event) {
     body: message,
     icon: icon,
     badge: '/icon-192x192.png',
-    data: data,
+    data: { url },
   };
 
   event.waitUntil(
@@ -113,32 +121,18 @@ self.addEventListener('push', function(event) {
   );
 });
 
-// Handle notification click
 self.addEventListener('notificationclick', function(event) {
-  event.notification.close(); // Close the notification
-  const url = event.notification.data.url || '/'; // Default URL
+  event.notification.close();
+  const url = event.notification.data.url || '/';
   event.waitUntil(
-    clients.openWindow(url) // Open the URL in the browser
+    clients.openWindow(url)
   );
 });
 
-// Error and unhandled rejection handling
 self.addEventListener('error', (event) => {
   console.error('Service Worker error:', event.error);
 });
 
 self.addEventListener('unhandledrejection', (event) => {
   console.error('Service Worker unhandled rejection:', event.reason);
-});
-
-caches.keys().then((cacheNames) => {
-  return Promise.all(
-    cacheNames.map((cacheName) => {
-      if (!cacheWhitelist.includes(cacheName)) {
-        console.log(`Service Worker: Deleting old cache ${cacheName}`);
-        return caches.delete(cacheName);
-      }
-      return Promise.resolve();
-    })
-  );
 });

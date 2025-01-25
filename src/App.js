@@ -291,7 +291,7 @@ const handleScheduleClick = (taskId) => {
 
   return (
     <>
-    
+  
       <Analytics />
       <div className="App">
         <WeglotInit />
